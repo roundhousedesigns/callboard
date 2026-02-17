@@ -10,6 +10,7 @@ import { ReportsPage } from "./pages/admin/ReportsPage";
 import { OfflinePrintSheetPage } from "./pages/admin/OfflinePrintSheetPage";
 import { ManualEntryPage } from "./pages/admin/ManualEntryPage";
 import { CalendarImportPage } from "./pages/admin/CalendarImportPage";
+import { PastShowSheetPage } from "./pages/admin/PastShowSheetPage";
 import { SignInLandingPage } from "./pages/actor/SignInLandingPage";
 import { ActorHomePage } from "./pages/actor/ActorHomePage";
 
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="actors" element={<ActorsPage />} />
         <Route path="shows" element={<ShowsPage />} />
         <Route path="qr" element={<QRDisplayPage />} />
+        <Route path="shows/past/:showId" element={<PastShowSheetPage />} />
         <Route path="import" element={<CalendarImportPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="offline" element={<OfflinePrintSheetPage />} />

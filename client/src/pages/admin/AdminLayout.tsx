@@ -60,7 +60,7 @@ export function AdminLayout() {
               color: isActive ? "var(--accent)" : "var(--text)",
             })}
           >
-            QR
+            Current QR
           </NavLink>
           <NavLink
             to="/admin/import"

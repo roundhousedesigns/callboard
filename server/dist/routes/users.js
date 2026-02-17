@@ -1,9 +1,8 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
 import { authMiddleware, adminOnly } from "../middleware/auth.js";
-const prisma = new PrismaClient();
+import { prisma } from "../db.js";
 const router = Router();
 router.use(authMiddleware);
 router.use(adminOnly);

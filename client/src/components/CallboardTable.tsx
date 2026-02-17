@@ -23,7 +23,11 @@ interface CallboardTableProps {
   actors: User[];
   shows: Show[];
   attendance: AttendanceRecord[];
-  onSetStatus?: (userId: string, showId: string, status: AttendanceRecord["status"]) => void;
+  onSetStatus?: (
+    userId: string,
+    showId: string,
+    status: AttendanceRecord["status"] | null
+  ) => void;
   readOnly?: boolean;
 }
 
@@ -46,7 +50,7 @@ function StatusSelect({
 	onChange,
 }: {
 	value: AttendanceRecord["status"] | null;
-	onChange: (status: AttendanceRecord["status"]) => void;
+	onChange: (status: AttendanceRecord["status"] | null) => void;
 }) {
 	const [open, setOpen] = useState(false);
 	const [popoverRect, setPopoverRect] = useState<{ top: number; left: number } | null>(null);
@@ -144,6 +148,30 @@ function StatusSelect({
 							gap: "2px",
 						}}
 					>
+						{value !== null && (
+							<li role="option" aria-selected={false}>
+								<button
+									type="button"
+									onClick={() => {
+										onChange(null);
+										setOpen(false);
+									}}
+									aria-label="Clear status"
+									style={{
+										border: "none",
+										background: "transparent",
+										color: "var(--text-muted)",
+										cursor: "pointer",
+										padding: "6px",
+										borderRadius: "4px",
+										display: "inline-flex",
+										fontSize: "0.85rem",
+									}}
+								>
+									Clear
+								</button>
+							</li>
+						)}
 						{STATUS_OPTIONS.map((opt) => (
 							<li key={opt.value} role="option" aria-selected={value === opt.value}>
 								<button

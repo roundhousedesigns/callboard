@@ -85,6 +85,37 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.delete("/", async (req, res) => {
+  const userId = req.query.userId as string | undefined;
+  const showId = req.query.showId as string | undefined;
+
+  if (!userId || !showId) {
+    res.status(400).json({ error: "userId and showId required" });
+    return;
+  }
+
+  const orgId = req.user!.organizationId;
+
+  const attendance = await prisma.attendance.findFirst({
+    where: {
+      userId,
+      showId,
+      user: { organizationId: orgId },
+      show: { organizationId: orgId },
+    },
+  });
+
+  if (!attendance) {
+    res.status(404).json({ error: "Attendance record not found" });
+    return;
+  }
+
+  await prisma.attendance.delete({
+    where: { userId_showId: { userId, showId } },
+  });
+  res.json({ ok: true });
+});
+
 router.post("/bulk", async (req, res) => {
   try {
     const schema = z.object({
@@ -109,7 +140,7 @@ router.post("/bulk", async (req, res) => {
         role: "actor",
       },
     });
-    const validIds = new Set(users.map((u) => u.id));
+    const validIds = new Set(users.map((u: { id: string }) => u.id));
 
     const results = await Promise.all(
       data.userIds

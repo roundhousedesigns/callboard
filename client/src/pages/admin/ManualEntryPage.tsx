@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import type { User } from "../../lib/auth";
 import { api } from "../../lib/api";
 import { formatShowTime } from "../../lib/dateUtils";
-import { db } from "../../lib/offlineDb";
 
 interface Show {
   id: string;

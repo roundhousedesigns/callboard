@@ -1,23 +1,78 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db.js";
 import multer from "multer";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { authMiddleware, adminOnly } from "../middleware/auth.js";
-const prisma = new PrismaClient();
 const router = Router();
+/** Normalize imported time to HH:mm. Handles 24h, 12h, legacy labels, Excel serial. */
+function normalizeShowTime(value) {
+    if (value === undefined || value === null || String(value).trim() === "")
+        return null;
+    const s = String(value).trim();
+    const lower = s.toLowerCase();
+    const legacy = {
+        matinee: "14:00",
+        evening: "19:00",
+        noon: "12:00",
+        midnight: "00:00",
+    };
+    if (legacy[lower])
+        return legacy[lower];
+    if (typeof value === "number" && !Number.isNaN(value)) {
+        const fraction = value >= 1 ? value % 1 : value;
+        if (fraction >= 0 && fraction < 1) {
+            const totalMinutes = Math.round(fraction * 24 * 60) % (24 * 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+        }
+    }
+    const m24 = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (m24) {
+        const h = parseInt(m24[1], 10);
+        const min = m24[2];
+        if (h >= 0 && h <= 23)
+            return `${String(h).padStart(2, "0")}:${min}`;
+    }
+    const m12 = s.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/i);
+    if (m12) {
+        let h = parseInt(m12[1], 10);
+        const min = m12[2];
+        const ampm = (m12[3] ?? "").toLowerCase();
+        if (ampm === "pm" && h < 12)
+            h += 12;
+        if (ampm === "am" && h === 12)
+            h = 0;
+        if (h >= 0 && h <= 23)
+            return `${String(h).padStart(2, "0")}:${min}`;
+    }
+    return s;
+}
 const upload = multer({ storage: multer.memoryStorage() });
 router.use(authMiddleware);
 router.use(adminOnly);
+/** Validates HH:mm or HH:mm:ss format */
+const SHOW_TIME_REGEX = /^\d{1,2}:\d{2}(?::\d{2})?$/;
+const showTimeSchema = z.string().regex(SHOW_TIME_REGEX, "Time must be HH:mm or HH:mm:ss");
+/** Normalize to HH:mm for consistent storage */
+function toHHmm(s) {
+    const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!m)
+        return s;
+    const h = String(parseInt(m[1], 10)).padStart(2, "0");
+    const min = m[2];
+    return `${h}:${min}`;
+}
 const createShowSchema = z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    showTime: z.string().min(1),
+    showTime: showTimeSchema,
 });
 const updateShowSchema = z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    showTime: z.string().min(1).optional(),
+    showTime: showTimeSchema.optional(),
 });
 router.get("/", async (req, res) => {
     const orgId = req.user.organizationId;
@@ -49,7 +104,7 @@ router.post("/", async (req, res) => {
             data: {
                 organizationId: orgId,
                 date,
-                showTime: data.showTime,
+                showTime: toHHmm(data.showTime),
             },
         });
         res.status(201).json(show);
@@ -81,9 +136,10 @@ router.post("/import", upload.single("file"), async (req, res) => {
             });
             for (const row of parsed.data) {
                 const date = row.date ?? row.Date ?? row.DATE;
-                const showTime = row.showTime ?? row.show_time ?? row.ShowTime ?? row.time ?? row.Time ?? row.label ?? row.Label;
-                if (date && showTime) {
-                    rows.push({ date: String(date).trim(), showTime: String(showTime).trim() });
+                const raw = row.showTime ?? row.show_time ?? row.ShowTime ?? row.time ?? row.Time ?? row.label ?? row.Label ?? row.name ?? row.Name;
+                const showTime = normalizeShowTime(raw);
+                if (date && showTime && SHOW_TIME_REGEX.test(showTime)) {
+                    rows.push({ date: String(date).trim(), showTime });
                 }
             }
         }
@@ -93,11 +149,12 @@ router.post("/import", upload.single("file"), async (req, res) => {
             const data = XLSX.utils.sheet_to_json(sheet);
             for (const row of data) {
                 const date = row.date ?? row.Date ?? row.DATE;
-                const showTime = row.showTime ?? row.show_time ?? row.ShowTime ?? row.time ?? row.Time ?? row.label ?? row.Label;
-                if (date && showTime) {
+                const raw = row.showTime ?? row.show_time ?? row.ShowTime ?? row.time ?? row.Time ?? row.label ?? row.Label ?? row.name ?? row.Name;
+                const showTime = normalizeShowTime(raw);
+                if (date && showTime && SHOW_TIME_REGEX.test(showTime)) {
                     rows.push({
                         date: String(date).trim(),
-                        showTime: String(showTime).trim(),
+                        showTime,
                     });
                 }
             }
@@ -136,7 +193,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
                     data: {
                         organizationId: orgId,
                         date,
-                        showTime: row.showTime,
+                        showTime: toHHmm(row.showTime),
                     },
                 });
                 created.push(row);
@@ -194,6 +251,9 @@ router.patch("/:id", async (req, res) => {
             d.setHours(0, 0, 0, 0);
             updateData.date = d;
         }
+        if (data.showTime) {
+            updateData.showTime = toHHmm(data.showTime);
+        }
         const show = await prisma.show.update({
             where: { id: req.params.id },
             data: updateData,
@@ -217,6 +277,10 @@ router.post("/:id/activate", async (req, res) => {
         res.status(404).json({ error: "Show not found" });
         return;
     }
+    if (show.lockedAt) {
+        res.status(400).json({ error: "Closed shows cannot be re-activated" });
+        return;
+    }
     await prisma.$transaction([
         prisma.show.updateMany({
             where: { organizationId: orgId, id: { not: req.params.id } },
@@ -226,7 +290,9 @@ router.post("/:id/activate", async (req, res) => {
             where: { id: req.params.id },
             data: {
                 activeAt: new Date(),
-                signInToken: show.signInToken ?? randomUUID(),
+                lockedAt: null,
+                // Rotate token on every activation to invalidate prior QR snapshots.
+                signInToken: randomUUID(),
             },
         }),
     ]);
@@ -235,7 +301,7 @@ router.post("/:id/activate", async (req, res) => {
     });
     res.json(updated);
 });
-router.post("/:id/lock", async (req, res) => {
+router.post("/:id/close-signin", async (req, res) => {
     const orgId = req.user.organizationId;
     const show = await prisma.show.findFirst({
         where: { id: req.params.id, organizationId: orgId },
@@ -244,24 +310,18 @@ router.post("/:id/lock", async (req, res) => {
         res.status(404).json({ error: "Show not found" });
         return;
     }
-    const updated = await prisma.show.update({
-        where: { id: req.params.id },
-        data: { lockedAt: new Date() },
-    });
-    res.json(updated);
-});
-router.post("/:id/unlock", async (req, res) => {
-    const orgId = req.user.organizationId;
-    const show = await prisma.show.findFirst({
-        where: { id: req.params.id, organizationId: orgId },
-    });
-    if (!show) {
-        res.status(404).json({ error: "Show not found" });
+    if (!show.activeAt) {
+        res.status(400).json({ error: "Only the current active show can be closed" });
         return;
     }
     const updated = await prisma.show.update({
         where: { id: req.params.id },
-        data: { lockedAt: null },
+        data: {
+            lockedAt: new Date(),
+            activeAt: null,
+            // Immediately invalidate current QR link when sign-in is closed.
+            signInToken: randomUUID(),
+        },
     });
     res.json(updated);
 });

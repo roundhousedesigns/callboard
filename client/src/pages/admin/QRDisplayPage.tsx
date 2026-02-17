@@ -16,7 +16,8 @@ export function QRDisplayPage() {
   const [show, setShow] = useState<Show | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function loadActiveShow() {
+    setError(null);
     api
       .get<Show>("/shows/active")
       .then(setShow)
@@ -24,6 +25,10 @@ export function QRDisplayPage() {
         setError(err instanceof Error ? err.message : "Failed");
         setShow(null);
       });
+  }
+
+  useEffect(() => {
+    loadActiveShow();
   }, []);
 
   if (error) {
@@ -43,9 +48,12 @@ export function QRDisplayPage() {
         </h2>
         {isNoActive && (
           <p style={{ color: "var(--text-muted)" }}>
-            Activate a show from the Shows page to display the sign-in QR code.
+            Open sign-in for a show from the Shows page to display the QR code.
           </p>
         )}
+        <button className="no-print" type="button" onClick={loadActiveShow}>
+          Refresh
+        </button>
       </div>
     );
   }
@@ -53,18 +61,18 @@ export function QRDisplayPage() {
   if (!show.signInToken) {
     return (
       <div>
-        <p>No active show. Activate a show from the Shows page first.</p>
+        <p>No active show. Open sign-in for a show from the Shows page first.</p>
       </div>
     );
   }
   if (show.lockedAt) {
     return (
       <div>
-        <h2>Sign-in sheet is locked</h2>
+        <h2>No active show</h2>
         <p style={{ color: "var(--text-muted)" }}>
           {new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
         </p>
-        <p>Unlock from the Shows page to allow sign-ins.</p>
+        <p>This show has been closed for sign-in.</p>
       </div>
     );
   }
@@ -89,6 +97,9 @@ export function QRDisplayPage() {
       <p style={{ color: "var(--text-muted)" }}>
         {new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
       </p>
+      <button className="no-print" type="button" onClick={() => window.print()}>
+        Print QR sheet
+      </button>
       <div
         style={{
           padding: "1.5rem",

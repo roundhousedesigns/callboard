@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { api } from "../../lib/api";
 import { formatShowTime } from "../../lib/dateUtils";
 
 interface ImportResult {

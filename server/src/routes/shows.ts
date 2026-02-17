@@ -149,7 +149,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
       for (const row of parsed.data) {
         const date = row.date ?? row.Date ?? row.DATE;
         const raw = row.showTime ?? row.show_time ?? row.ShowTime ?? row.time ?? row.Time ?? row.label ?? row.Label ?? row.name ?? row.Name;
-        const showTime = normalizeShowTime(raw);
+        const showTime = normalizeShowTime(raw as string | number | undefined);
         if (date && showTime && SHOW_TIME_REGEX.test(showTime)) {
           rows.push({ date: String(date).trim(), showTime });
         }
@@ -161,7 +161,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
       for (const row of data) {
         const date = row.date ?? row.Date ?? row.DATE;
         const raw = row.showTime ?? row.show_time ?? row.ShowTime ?? row.time ?? row.Time ?? row.label ?? row.Label ?? row.name ?? row.Name;
-        const showTime = normalizeShowTime(raw);
+        const showTime = normalizeShowTime(raw as string | number | undefined);
         if (date && showTime && SHOW_TIME_REGEX.test(showTime)) {
           rows.push({
             date: String(date).trim(),
@@ -188,10 +188,10 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
 
       const existing = await prisma.show.findUnique({
         where: {
-          organizationId_date_time: {
+          organizationId_date_showTime: {
             organizationId: orgId,
             date,
-            time: row.showTime,
+            showTime: row.showTime,
           },
         },
       });
@@ -296,6 +296,10 @@ router.post("/:id/activate", async (req, res) => {
     res.status(404).json({ error: "Show not found" });
     return;
   }
+  if (show.lockedAt) {
+    res.status(400).json({ error: "Closed shows cannot re-open sign-in" });
+    return;
+  }
 
   await prisma.$transaction([
     prisma.show.updateMany({
@@ -306,7 +310,9 @@ router.post("/:id/activate", async (req, res) => {
       where: { id: req.params.id },
       data: {
         activeAt: new Date(),
-        signInToken: show.signInToken ?? randomUUID(),
+        lockedAt: null,
+        // Rotate token on every activation to invalidate prior QR snapshots.
+        signInToken: randomUUID(),
       },
     }),
   ]);
@@ -317,7 +323,7 @@ router.post("/:id/activate", async (req, res) => {
   res.json(updated);
 });
 
-router.post("/:id/lock", async (req, res) => {
+router.post("/:id/close-signin", async (req, res) => {
   const orgId = req.user!.organizationId;
   const show = await prisma.show.findFirst({
     where: { id: req.params.id, organizationId: orgId },
@@ -326,27 +332,19 @@ router.post("/:id/lock", async (req, res) => {
     res.status(404).json({ error: "Show not found" });
     return;
   }
-
-  const updated = await prisma.show.update({
-    where: { id: req.params.id },
-    data: { lockedAt: new Date() },
-  });
-  res.json(updated);
-});
-
-router.post("/:id/unlock", async (req, res) => {
-  const orgId = req.user!.organizationId;
-  const show = await prisma.show.findFirst({
-    where: { id: req.params.id, organizationId: orgId },
-  });
-  if (!show) {
-    res.status(404).json({ error: "Show not found" });
+  if (!show.activeAt) {
+    res.status(400).json({ error: "Only the current active show can be closed" });
     return;
   }
 
   const updated = await prisma.show.update({
     where: { id: req.params.id },
-    data: { lockedAt: null },
+    data: {
+      lockedAt: new Date(),
+      activeAt: null,
+      // Immediately invalidate current QR link when sign-in is closed.
+      signInToken: randomUUID(),
+    },
   });
   res.json(updated);
 });

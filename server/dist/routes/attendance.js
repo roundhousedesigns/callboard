@@ -1,8 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../db.js";
 import { authMiddleware, adminOnly } from "../middleware/auth.js";
-const prisma = new PrismaClient();
 const router = Router();
 router.use(authMiddleware);
 router.use(adminOnly);
@@ -76,6 +75,31 @@ router.post("/", async (req, res) => {
         }
         throw err;
     }
+});
+router.delete("/", async (req, res) => {
+    const userId = req.query.userId;
+    const showId = req.query.showId;
+    if (!userId || !showId) {
+        res.status(400).json({ error: "userId and showId required" });
+        return;
+    }
+    const orgId = req.user.organizationId;
+    const attendance = await prisma.attendance.findFirst({
+        where: {
+            userId,
+            showId,
+            user: { organizationId: orgId },
+            show: { organizationId: orgId },
+        },
+    });
+    if (!attendance) {
+        res.status(404).json({ error: "Attendance record not found" });
+        return;
+    }
+    await prisma.attendance.delete({
+        where: { userId_showId: { userId, showId } },
+    });
+    res.json({ ok: true });
 });
 router.post("/bulk", async (req, res) => {
     try {

@@ -74,16 +74,23 @@ export function CallboardPage() {
   async function handleSetStatus(
     userId: string,
     showId: string,
-    status: AttendanceRecord["status"]
+    status: AttendanceRecord["status"] | null
   ) {
     try {
-      await api.post("/attendance", { userId, showId, status });
-      setAttendance((prev) => {
-        const rest = prev.filter(
-          (a) => !(a.userId === userId && a.showId === showId)
+      if (status === null) {
+        await api.delete(`/attendance?userId=${userId}&showId=${showId}`);
+        setAttendance((prev) =>
+          prev.filter((a) => !(a.userId === userId && a.showId === showId))
         );
-        return [...rest, { userId, showId, status }];
-      });
+      } else {
+        await api.post("/attendance", { userId, showId, status });
+        setAttendance((prev) => {
+          const rest = prev.filter(
+            (a) => !(a.userId === userId && a.showId === showId)
+          );
+          return [...rest, { userId, showId, status }];
+        });
+      }
     } catch (err) {
       console.error(err);
     }
