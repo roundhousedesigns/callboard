@@ -1,0 +1,30 @@
+{
+  "name": "callboard",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"yarn dev:server\" \"yarn dev:client\"",
+    "dev:client": "yarn workspace client dev",
+    "dev:server": "yarn workspace server dev",
+    "build": "yarn workspace client build && yarn workspace server build",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.5.2",
+    "concurrently": "^8.2.2",
+    "dotenv": "^17.3.1",
+    "prisma": "^7.4.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.4.0"
+  }
+}

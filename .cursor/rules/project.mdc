@@ -1,0 +1,43 @@
+---
+description: Project overview and context for Callboard
+globs:
+alwaysApply: true
+---
+# Callboard
+
+A webapp for professional theatre companies to manage actor attendance. Replaces physical sign-in sheets with QR code sign-in, admin controls, and offline support.
+
+## Tech Stack
+
+- **Frontend**: React + Vite (in `client/`)
+- **Backend**: Express API (in `server/`)
+- **Database**: PostgreSQL with Prisma ORM (schema in `prisma/`)
+- **Package Manager**: Yarn (workspaces for client and server)
+
+## Features
+
+- **QR Code Sign-In**: Actors scan a unique QR code per show to sign in (must be logged in)
+- **Admin Controls**: Manually sign in actors, or mark as absent, vacation, or personal day
+- **Customizable Show Labels**: Matinee, Evening, or any custom label; multiple shows per day
+- **Calendar Import**: Import performance calendar from CSV or Excel
+- **Attendance Reports**: View and print reports
+- **Offline Mode**: Print attendance sheet when offline; enter manual sign-ins when back online (Dexie for IndexedDB)
+
+## Project Structure
+
+- `client/` - React + Vite frontend
+- `server/` - Express API
+- `prisma/` - Database schema and migrations
+
+## Data Model (Prisma)
+
+- **Organization**: Multi-tenant; each org has users and shows
+- **User**: `admin` or `actor` role; belongs to one organization
+- **Show**: Date + label (e.g., Matinee, Evening); has unique sign-in token for QR
+- **Attendance**: Links user to show; status can be `signed_in`, `absent`, `vacation`, or `personal_day`
+
+## Development
+
+- Use `yarn` for package management (corepack if needed)
+- PostgreSQL required; Docker example in README
+- Demo credentials: Admin `admin@demo.theatre` / Actor `alice.anderson@demo.theatre` (password: `password123`)

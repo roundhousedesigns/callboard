@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  users       User[]
+  shows       Show[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  hashedPassword String
+  firstName      String
+  lastName       String
+  role           UserRole
+  organizationId String
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  attendance     Attendance[] @relation("ActorAttendance")
+  markedAttendance Attendance[] @relation("MarkedByUser")
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+enum UserRole {
+  admin
+  actor
+}
+
+model Show {
+  id             String    @id @default(cuid())
+  organizationId String
+  date           DateTime  @db.Date
+  showTime       String   @map("time")
+  activeAt       DateTime?
+  lockedAt       DateTime?
+  signInToken    String?   @unique
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  attendance   Attendance[]
+
+  @@unique([organizationId, date, showTime])
+  @@index([organizationId])
+  @@index([signInToken])
+}
+
+model Attendance {
+  id             String         @id @default(cuid())
+  userId         String
+  showId         String
+  status         AttendanceStatus
+  signedInAt     DateTime?
+  markedByUserId String?
+
+  user         User   @relation("ActorAttendance", fields: [userId], references: [id], onDelete: Cascade)
+  show         Show   @relation(fields: [showId], references: [id], onDelete: Cascade)
+  markedByUser User?  @relation("MarkedByUser", fields: [markedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, showId])
+  @@index([showId])
+  @@index([userId])
+}
+
+enum AttendanceStatus {
+  signed_in
+  absent
+  vacation
+  personal_day
+}
