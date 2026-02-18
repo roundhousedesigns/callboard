@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { api } from "../../lib/api";
-import { formatShowTime } from "../../lib/dateUtils";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../../lib/api';
+import { formatShowTime } from '../../lib/dateUtils';
 
 interface Show {
 	id: string;
@@ -17,14 +17,14 @@ export function PastShowsPage() {
 
 	useEffect(() => {
 		api
-			.get<Show[]>("/shows")
+			.get<Show[]>('/shows')
 			.then((data) => {
 				const past = data
 					.filter((s) => !!s.lockedAt)
 					.sort(
 						(a, b) =>
 							new Date(b.date).getTime() - new Date(a.date).getTime() ||
-							b.showTime.localeCompare(a.showTime)
+							b.showTime.localeCompare(a.showTime),
 					);
 				setShows(past);
 			})
@@ -37,9 +37,7 @@ export function PastShowsPage() {
 	return (
 		<div>
 			<h1>Past shows</h1>
-			<p style={{ color: "var(--text-muted)" }}>
-				Closed shows can be reviewed and corrected.
-			</p>
+			<p style={{ color: 'var(--text-muted)' }}>Closed shows can be reviewed and corrected.</p>
 			<table>
 				<thead>
 					<tr>
@@ -54,7 +52,7 @@ export function PastShowsPage() {
 						<tr key={show.id}>
 							<td>{new Date(show.date).toLocaleDateString()}</td>
 							<td>{formatShowTime(show.showTime)}</td>
-							<td>{show.lockedAt ? new Date(show.lockedAt).toLocaleString() : "—"}</td>
+							<td>{show.lockedAt ? new Date(show.lockedAt).toLocaleString() : '—'}</td>
 							<td>
 								<Link to={`/admin/past-shows/${show.id}`}>View sign-in sheet</Link>
 							</td>
@@ -62,7 +60,7 @@ export function PastShowsPage() {
 					))}
 					{shows.length === 0 && (
 						<tr>
-							<td colSpan={4} style={{ color: "var(--text-muted)" }}>
+							<td colSpan={4} style={{ color: 'var(--text-muted)' }}>
 								No past shows yet.
 							</td>
 						</tr>

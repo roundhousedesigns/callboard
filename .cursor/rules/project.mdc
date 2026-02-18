@@ -18,7 +18,6 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
 
 - **QR Code Sign-In**: Actors scan a unique QR code per show to sign in (must be logged in)
 - **Admin Controls**: Manually sign in actors, or mark as absent, vacation, or personal day
-- **Customizable Show Labels**: Matinee, Evening, or any custom label; multiple shows per day
 - **Calendar Import**: Import performance calendar from CSV or Excel
 - **Attendance Reports**: View and print reports
 - **Offline Mode**: Print attendance sheet when offline; enter manual sign-ins when back online (Dexie for IndexedDB)
@@ -33,7 +32,7 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
 
 - **Organization**: Multi-tenant; each org has users and shows
 - **User**: `admin` or `actor` role; belongs to one organization
-- **Show**: Date + label (e.g., Matinee, Evening); has unique sign-in token for QR
+- **Show**: Date + Time; has unique sign-in token for QR
 - **Attendance**: Links user to show; status can be `signed_in`, `absent`, `vacation`, or `personal_day`
 
 ## Development

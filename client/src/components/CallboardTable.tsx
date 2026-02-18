@@ -1,56 +1,52 @@
-import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
-import type { User } from "../lib/auth";
-import { formatShowTime } from "../lib/dateUtils";
-import { StatusIcon, statusLabels } from "./StatusIcon";
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import type { User } from '../lib/auth';
+import { formatShowTime } from '../lib/dateUtils';
+import { StatusIcon, statusLabels } from './StatusIcon';
 
 export interface Show {
-  id: string;
-  date: string;
-  showTime: string;
-  activeAt: string | null;
-  lockedAt: string | null;
-  signInToken: string | null;
+	id: string;
+	date: string;
+	showTime: string;
+	activeAt: string | null;
+	lockedAt: string | null;
+	signInToken: string | null;
 }
 
 export interface AttendanceRecord {
-  userId: string;
-  showId: string;
-  status: "signed_in" | "absent" | "vacation" | "personal_day";
+	userId: string;
+	showId: string;
+	status: 'signed_in' | 'absent' | 'vacation' | 'personal_day';
 }
 
 interface CallboardTableProps {
-  actors: User[];
-  shows: Show[];
-  attendance: AttendanceRecord[];
-  onSetStatus?: (
-    userId: string,
-    showId: string,
-    status: AttendanceRecord["status"] | null
-  ) => void;
-  readOnly?: boolean;
+	actors: User[];
+	shows: Show[];
+	attendance: AttendanceRecord[];
+	onSetStatus?: (userId: string, showId: string, status: AttendanceRecord['status'] | null) => void;
+	readOnly?: boolean;
 }
 
-const statusColors: Record<AttendanceRecord["status"], string> = {
-	signed_in: "var(--success)",
-	absent: "var(--error)",
-	vacation: "var(--accent)",
-	personal_day: "var(--warning)",
+const statusColors: Record<AttendanceRecord['status'], string> = {
+	signed_in: 'var(--success)',
+	absent: 'var(--error)',
+	vacation: 'var(--accent)',
+	personal_day: 'var(--warning)',
 };
 
-const STATUS_OPTIONS: Array<{ value: AttendanceRecord["status"] }> = [
-	{ value: "signed_in" },
-	{ value: "absent" },
-	{ value: "vacation" },
-	{ value: "personal_day" },
+const STATUS_OPTIONS: Array<{ value: AttendanceRecord['status'] }> = [
+	{ value: 'signed_in' },
+	{ value: 'absent' },
+	{ value: 'vacation' },
+	{ value: 'personal_day' },
 ];
 
 function StatusSelect({
 	value,
 	onChange,
 }: {
-	value: AttendanceRecord["status"] | null;
-	onChange: (status: AttendanceRecord["status"] | null) => void;
+	value: AttendanceRecord['status'] | null;
+	onChange: (status: AttendanceRecord['status'] | null) => void;
 }) {
 	const [open, setOpen] = useState(false);
 	const [popoverRect, setPopoverRect] = useState<{ top: number; left: number } | null>(null);
@@ -60,10 +56,7 @@ function StatusSelect({
 	useEffect(() => {
 		function handleClickOutside(e: MouseEvent) {
 			const target = e.target as Node;
-			if (
-				buttonRef.current?.contains(target) ||
-				popoverRef.current?.contains(target)
-			) {
+			if (buttonRef.current?.contains(target) || popoverRef.current?.contains(target)) {
 				return;
 			}
 			setOpen(false);
@@ -71,11 +64,11 @@ function StatusSelect({
 		function handleScroll() {
 			setOpen(false);
 		}
-		document.addEventListener("mousedown", handleClickOutside);
-		window.addEventListener("scroll", handleScroll, true);
+		document.addEventListener('mousedown', handleClickOutside);
+		window.addEventListener('scroll', handleScroll, true);
 		return () => {
-			document.removeEventListener("mousedown", handleClickOutside);
-			window.removeEventListener("scroll", handleScroll, true);
+			document.removeEventListener('mousedown', handleClickOutside);
+			window.removeEventListener('scroll', handleScroll, true);
 		};
 	}, []);
 
@@ -96,33 +89,35 @@ function StatusSelect({
 	}, [open]);
 
 	function handleKeyDown(e: React.KeyboardEvent) {
-		if (e.key === "Escape") setOpen(false);
+		if (e.key === 'Escape') setOpen(false);
 	}
 
 	return (
-		<div style={{ display: "inline-block" }} onKeyDown={handleKeyDown}>
+		<div style={{ display: 'inline-block' }} onKeyDown={handleKeyDown}>
 			<button
 				ref={buttonRef}
 				type="button"
 				onClick={() => setOpen((o) => !o)}
 				aria-haspopup="listbox"
 				aria-expanded={open}
-				aria-label={value ? `Status: ${statusLabels[value]}` : "Set status"}
+				aria-label={value ? `Status: ${statusLabels[value]}` : 'Set status'}
 				style={{
-					border: "none",
-					background: "transparent",
-					color: value ? statusColors[value] : "var(--text-muted)",
-					cursor: "pointer",
-					padding: "2px",
-					display: "inline-flex",
-					alignItems: "center",
-					justifyContent: "center",
+					border: 'none',
+					background: 'transparent',
+					color: value ? statusColors[value] : 'var(--text-muted)',
+					cursor: 'pointer',
+					padding: '2px',
+					display: 'inline-flex',
+					alignItems: 'center',
+					justifyContent: 'center',
 				}}
 			>
 				{value ? (
 					<StatusIcon status={value} color={statusColors[value]} />
 				) : (
-					<span aria-hidden style={{ fontSize: "0.9rem" }}>—</span>
+					<span aria-hidden style={{ fontSize: '0.9rem' }}>
+						—
+					</span>
 				)}
 			</button>
 			{open &&
@@ -133,19 +128,19 @@ function StatusSelect({
 						role="listbox"
 						aria-label="Attendance status"
 						style={{
-							position: "fixed",
+							position: 'fixed',
 							top: popoverRect.top,
 							left: popoverRect.left,
 							margin: 0,
-							padding: "4px",
-							listStyle: "none",
-							background: "var(--bg-elevated)",
-							border: "1px solid var(--border)",
-							borderRadius: "6px",
-							boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+							padding: '4px',
+							listStyle: 'none',
+							background: 'var(--bg-elevated)',
+							border: '1px solid var(--border)',
+							borderRadius: '6px',
+							boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
 							zIndex: 9999,
-							display: "flex",
-							gap: "2px",
+							display: 'flex',
+							gap: '2px',
 						}}
 					>
 						{value !== null && (
@@ -158,14 +153,14 @@ function StatusSelect({
 									}}
 									aria-label="Clear status"
 									style={{
-										border: "none",
-										background: "transparent",
-										color: "var(--text-muted)",
-										cursor: "pointer",
-										padding: "6px",
-										borderRadius: "4px",
-										display: "inline-flex",
-										fontSize: "0.85rem",
+										border: 'none',
+										background: 'transparent',
+										color: 'var(--text-muted)',
+										cursor: 'pointer',
+										padding: '6px',
+										borderRadius: '4px',
+										display: 'inline-flex',
+										fontSize: '0.85rem',
 									}}
 								>
 									Clear
@@ -182,13 +177,13 @@ function StatusSelect({
 									}}
 									aria-label={statusLabels[opt.value]}
 									style={{
-										border: "none",
-										background: value === opt.value ? "var(--bg-hover)" : "transparent",
+										border: 'none',
+										background: value === opt.value ? 'var(--bg-hover)' : 'transparent',
 										color: statusColors[opt.value],
-										cursor: "pointer",
-										padding: "6px",
-										borderRadius: "4px",
-										display: "inline-flex",
+										cursor: 'pointer',
+										padding: '6px',
+										borderRadius: '4px',
+										display: 'inline-flex',
 									}}
 								>
 									<StatusIcon status={opt.value} color={statusColors[opt.value]} />
@@ -196,75 +191,75 @@ function StatusSelect({
 							</li>
 						))}
 					</ul>,
-					document.body
+					document.body,
 				)}
 		</div>
 	);
 }
 
 export function CallboardTable({
-  actors,
-  shows,
-  attendance,
-  onSetStatus,
-  readOnly = false,
+	actors,
+	shows,
+	attendance,
+	onSetStatus,
+	readOnly = false,
 }: CallboardTableProps) {
-  const getStatus = (userId: string, showId: string) =>
-    attendance.find((a) => a.userId === userId && a.showId === showId)?.status;
+	const getStatus = (userId: string, showId: string) =>
+		attendance.find((a) => a.userId === userId && a.showId === showId)?.status;
 
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table>
-        <thead>
-          <tr>
-            <th style={{ minWidth: "140px" }}>Actor</th>
-            {shows.map((s) => (
-              <th key={s.id} style={{ minWidth: "100px" }}>
-                {new Date(s.date).toLocaleDateString()}
-                <br />
-                <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>
-                  {formatShowTime(s.showTime)}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {actors.map((actor) => (
-            <tr key={actor.id}>
-              <td>
-                {actor.lastName}, {actor.firstName}
-              </td>
-              {shows.map((show) => {
-                const status = getStatus(actor.id, show.id);
-                return (
-                  <td key={show.id}>
-                    {readOnly ? (
-                      status ? (
-                        <span
-                          style={{
-                            color: statusColors[status],
-                            display: "inline-flex",
-                          }}
-                        >
-                          <StatusIcon status={status} color={statusColors[status]} />
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--text-muted)" }}>—</span>
-                      )
-                    ) : (
-                      <StatusSelect
-                        value={status ?? null}
-                        onChange={(v) => onSetStatus?.(actor.id, show.id, v)}
-                      />
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+	return (
+		<div style={{ overflowX: 'auto' }}>
+			<table>
+				<thead>
+					<tr>
+						<th style={{ minWidth: '140px' }}>Actor</th>
+						{shows.map((s) => (
+							<th key={s.id} style={{ minWidth: '100px' }}>
+								{new Date(s.date).toLocaleDateString()}
+								<br />
+								<span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
+									{formatShowTime(s.showTime)}
+								</span>
+							</th>
+						))}
+					</tr>
+				</thead>
+				<tbody>
+					{actors.map((actor) => (
+						<tr key={actor.id}>
+							<td>
+								{actor.lastName}, {actor.firstName}
+							</td>
+							{shows.map((show) => {
+								const status = getStatus(actor.id, show.id);
+								return (
+									<td key={show.id}>
+										{readOnly ? (
+											status ? (
+												<span
+													style={{
+														color: statusColors[status],
+														display: 'inline-flex',
+													}}
+												>
+													<StatusIcon status={status} color={statusColors[status]} />
+												</span>
+											) : (
+												<span style={{ color: 'var(--text-muted)' }}>—</span>
+											)
+										) : (
+											<StatusSelect
+												value={status ?? null}
+												onChange={(v) => onSetStatus?.(actor.id, show.id, v)}
+											/>
+										)}
+									</td>
+								);
+							})}
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+	);
 }

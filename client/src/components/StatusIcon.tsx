@@ -1,10 +1,10 @@
-import type { AttendanceRecord } from "./CallboardTable";
+import type { AttendanceRecord } from './CallboardTable';
 
-const statusLabels: Record<AttendanceRecord["status"], string> = {
-	signed_in: "Signed in",
-	absent: "Absent",
-	vacation: "Vacation",
-	personal_day: "Personal day",
+const statusLabels: Record<AttendanceRecord['status'], string> = {
+	signed_in: 'Signed in',
+	absent: 'Absent',
+	vacation: 'Vacation',
+	personal_day: 'Personal day',
 };
 
 const iconSize = 20;
@@ -88,20 +88,20 @@ function PersonalDayIcon({ color }: { color: string }) {
 }
 
 interface StatusIconProps {
-	status: AttendanceRecord["status"];
+	status: AttendanceRecord['status'];
 	color?: string;
 }
 
 export function StatusIcon({ status, color }: StatusIconProps) {
-	const c = color ?? "currentColor";
+	const c = color ?? 'currentColor';
 	const label = statusLabels[status];
 
 	const icon =
-		status === "signed_in" ? (
+		status === 'signed_in' ? (
 			<SignedInIcon color={c} />
-		) : status === "absent" ? (
+		) : status === 'absent' ? (
 			<AbsentIcon color={c} />
-		) : status === "vacation" ? (
+		) : status === 'vacation' ? (
 			<VacationIcon color={c} />
 		) : (
 			<PersonalDayIcon color={c} />
@@ -112,7 +112,7 @@ export function StatusIcon({ status, color }: StatusIconProps) {
 			role="img"
 			aria-label={label}
 			title={label}
-			style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+			style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
 		>
 			{icon}
 		</span>
