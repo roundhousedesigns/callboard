@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { formatShowTime } from '../../lib/dateUtils';
+import { formatShowTime, toLocalDateStr } from '../../lib/dateUtils';
 
 function QRCodeIcon() {
 	return (
@@ -40,6 +40,8 @@ export function ShowsPage() {
 	const [shows, setShows] = useState<Show[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [form, setForm] = useState({ date: '', showTime: '' });
+	const [editingShowId, setEditingShowId] = useState<string | null>(null);
+	const [editForm, setEditForm] = useState({ date: '', showTime: '' });
 	useEffect(() => {
 		api
 			.get<Show[]>('/shows')
@@ -90,6 +92,36 @@ export function ShowsPage() {
 			setShows((prev) => prev.filter((s) => s.id !== id));
 		} catch (err) {
 			alert(err instanceof Error ? err.message : 'Failed');
+		}
+	}
+
+	function startEdit(show: Show) {
+		setEditingShowId(show.id);
+		setEditForm({
+			date: toLocalDateStr(new Date(show.date)),
+			showTime: show.showTime.slice(0, 5),
+		});
+	}
+
+	function cancelEdit() {
+		setEditingShowId(null);
+	}
+
+	async function handleSaveEdit(id: string) {
+		try {
+			const updated = await api.patch<Show>(`/shows/${id}`, editForm);
+			setShows((prev) =>
+				prev
+					.map((s) => (s.id === id ? updated : s))
+					.sort(
+						(a, b) =>
+							new Date(a.date).getTime() - new Date(b.date).getTime() ||
+							a.showTime.localeCompare(b.showTime),
+					),
+			);
+			setEditingShowId(null);
+		} catch (err) {
+			alert(err instanceof Error ? err.message : 'Failed to update show');
 		}
 	}
 
@@ -164,6 +196,7 @@ export function ShowsPage() {
 					<tbody>
 						{displayShows.map((show) => {
 							const isHighlighted = show.id === highlightedShowId;
+							const isEditing = editingShowId === show.id;
 							return (
 								<tr
 									key={show.id}
@@ -176,51 +209,105 @@ export function ShowsPage() {
 											: undefined
 									}
 								>
-									<td>{new Date(show.date).toLocaleDateString()}</td>
-									<td>{formatShowTime(show.showTime)}</td>
-									<td
-										className="no-print"
-										style={{
-											display: 'flex',
-											gap: '0.5rem',
-											flexWrap: 'wrap',
-											alignItems: 'center',
-											justifyContent: 'flex-end',
-										}}
-									>
-										{show.activeAt ? (
-											<>
-												<Link
-													to="/admin/qr"
-													aria-label="Open QR code"
-													className="btn btn--sm btn--ghost"
-													style={{ padding: '0.35rem 0.5rem' }}
-												>
-													<QRCodeIcon />
-												</Link>
+									{isEditing ? (
+										<>
+											<td>
+												<input
+													type="date"
+													value={editForm.date}
+													onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))}
+													aria-label="Date"
+												/>
+											</td>
+											<td>
+												<input
+													type="time"
+													value={editForm.showTime}
+													onChange={(e) => setEditForm((p) => ({ ...p, showTime: e.target.value }))}
+													aria-label="Time"
+												/>
+											</td>
+											<td
+												className="no-print"
+												style={{
+													display: 'flex',
+													gap: '0.5rem',
+													flexWrap: 'wrap',
+													alignItems: 'center',
+													justifyContent: 'flex-end',
+												}}
+											>
 												<button
-													className="btn btn--sm"
-													onClick={() => handleCloseSignIn(show.id)}
+													className="btn btn--sm btn--primary"
+													type="button"
+													onClick={() => handleSaveEdit(show.id)}
 												>
-													Close sign-in
+													Save
 												</button>
-											</>
-										) : (
-											<>
-												{!currentShow && show.id === nextUpcomingShowId ? (
-													<button
-														className="btn btn--sm btn--primary"
-														onClick={() => handleActivate(show.id)}
-													>
-														Open sign-in
-													</button>
-												) : null}
-												<button className="btn btn--sm btn--danger" onClick={() => handleDelete(show.id)}>
-													Delete
+												<button className="btn btn--sm" type="button" onClick={cancelEdit}>
+													Cancel
 												</button>
-											</>
-										)}
-									</td>
+											</td>
+										</>
+									) : (
+										<>
+											<td>{new Date(show.date).toLocaleDateString()}</td>
+											<td>{formatShowTime(show.showTime)}</td>
+											<td
+												className="no-print"
+												style={{
+													display: 'flex',
+													gap: '0.5rem',
+													flexWrap: 'wrap',
+													alignItems: 'center',
+													justifyContent: 'flex-end',
+												}}
+											>
+												<button
+													className="btn btn--sm btn--ghost"
+													type="button"
+													onClick={() => startEdit(show)}
+												>
+													Edit
+												</button>
+												{show.activeAt ? (
+													<>
+														<Link
+															to="/admin/qr"
+															aria-label="Open QR code"
+															className="btn btn--sm btn--ghost"
+															style={{ padding: '0.35rem 0.5rem' }}
+														>
+															<QRCodeIcon />
+														</Link>
+														<button
+															className="btn btn--sm"
+															onClick={() => handleCloseSignIn(show.id)}
+														>
+															Close sign-in
+														</button>
+													</>
+												) : (
+													<>
+														{!currentShow && show.id === nextUpcomingShowId ? (
+															<button
+																className="btn btn--sm btn--primary"
+																onClick={() => handleActivate(show.id)}
+															>
+																Open sign-in
+															</button>
+														) : null}
+														<button
+															className="btn btn--sm btn--danger"
+															onClick={() => handleDelete(show.id)}
+														>
+															Delete
+														</button>
+													</>
+												)}
+											</td>
+										</>
+									)}
 								</tr>
 							);
 						})}

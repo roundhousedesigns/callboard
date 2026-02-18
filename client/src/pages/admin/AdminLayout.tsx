@@ -1,6 +1,30 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 
+function QRCodeIcon() {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden
+		>
+			<rect x="3" y="3" width="7" height="7" rx="1" />
+			<rect x="14" y="3" width="7" height="7" rx="1" />
+			<rect x="3" y="14" width="7" height="7" rx="1" />
+			<rect x="14" y="14" width="3" height="3" rx="0.5" />
+			<rect x="19" y="14" width="2" height="2" rx="0.5" />
+			<rect x="14" y="19" width="2" height="2" rx="0.5" />
+		</svg>
+	);
+}
+
 export function AdminLayout() {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
@@ -37,12 +61,6 @@ export function AdminLayout() {
 							Shows
 						</NavLink>
 						<NavLink
-							to="/admin/qr"
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Current QR
-						</NavLink>
-						<NavLink
 							to="/admin/offline"
 							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
 						>
@@ -56,6 +74,16 @@ export function AdminLayout() {
 						</NavLink>
 					</nav>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+						{user?.organization?.showTitle && (
+							<NavLink
+								to="/admin/qr"
+								className={({ isActive }) => `nav-link nav-link--icon nav-link--qr${isActive ? ' active' : ''}`}
+								aria-label="Current QR code"
+								title="Current QR code"
+							>
+								<QRCodeIcon />
+							</NavLink>
+						)}
 						<span className="badge">
 							{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
 						</span>

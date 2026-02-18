@@ -24,10 +24,28 @@ export function toLocalDateStr(d: Date): string {
 	return `${y}-${m}-${day}`;
 }
 
+/** Start of today at midnight (local time). */
+export function getTodayStart(): Date {
+	const d = new Date();
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
 /** Start/end of the week containing the given date (Sunday–Saturday). */
 export function getWeekBounds(d: Date): { start: Date; end: Date } {
+	return getWeekBoundsWithStart(d, 0);
+}
+
+/**
+ * Start/end of the week containing the given date when week starts on a given day.
+ * @param d - reference date
+ * @param weekStartsOn - 0=Sunday, 1=Monday, ... 6=Saturday
+ */
+export function getWeekBoundsWithStart(d: Date, weekStartsOn: number): { start: Date; end: Date } {
 	const start = new Date(d);
-	start.setDate(start.getDate() - start.getDay());
+	const day = start.getDay();
+	const diff = (day - weekStartsOn + 7) % 7;
+	start.setDate(start.getDate() - diff);
 	start.setHours(0, 0, 0, 0);
 	const end = new Date(start);
 	end.setDate(end.getDate() + 6);

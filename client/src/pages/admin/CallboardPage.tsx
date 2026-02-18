@@ -4,11 +4,29 @@ import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
 import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
-import { toLocalDateStr, getWeekBounds } from '../../lib/dateUtils';
+import {
+	toLocalDateStr,
+	getWeekBoundsWithStart,
+	getTodayStart,
+} from '../../lib/dateUtils';
 
-function getThisWeekRange() {
-	const { start, end } = getWeekBounds(new Date());
-	return { start: toLocalDateStr(start), end: toLocalDateStr(end) };
+/**
+ * Week range for callboard: first show must be on or after the week-start day of the
+ * current week, and no past shows. So we use the later of (week-start date, today).
+ */
+function getThisWeekRange(weekStartsOn: number) {
+	const now = new Date();
+	const { start: weekStart } = getWeekBoundsWithStart(now, weekStartsOn);
+	const todayStart = getTodayStart();
+	// Don't show past shows: start from the later of week-start or today
+	const effectiveStart =
+		weekStart.getTime() >= todayStart.getTime() ? weekStart : todayStart;
+	const end = new Date(effectiveStart);
+	end.setDate(end.getDate() + 13);
+	return {
+		start: toLocalDateStr(effectiveStart),
+		end: toLocalDateStr(end),
+	};
 }
 
 export function CallboardPage() {
@@ -20,9 +38,12 @@ export function CallboardPage() {
 	const [refreshing, setRefreshing] = useState(false);
 	const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
+	const showsPerWeek = 8;
+	const weekStartsOn = user?.organization?.weekStartsOn ?? 0;
+
 	useEffect(() => {
-		setDateRange(getThisWeekRange());
-	}, []);
+		setDateRange(getThisWeekRange(weekStartsOn));
+	}, [weekStartsOn]);
 
 	const loadData = async (showLoading = true) => {
 		if (!dateRange.start) return;
@@ -36,10 +57,18 @@ export function CallboardPage() {
 				),
 			]);
 			setActors(usersRes.filter((u) => u.role === 'actor'));
-			setShows(showsRes);
+			// Only include shows on or after the range start (week-start or today, whichever is later) and no past shows
+			const rangeStartStr = dateRange.start;
+			const todayStr = toLocalDateStr(getTodayStart());
+			const showsInRange = showsRes.filter((s) => {
+				const showDateStr = s.date.slice(0, 10);
+				return showDateStr >= rangeStartStr && showDateStr >= todayStr;
+			});
+			setShows(showsInRange.slice(0, showsPerWeek));
 
 			const allAttendance: AttendanceRecord[] = [];
-			for (const show of showsRes) {
+			const showsToUse = showsInRange.slice(0, showsPerWeek);
+			for (const show of showsToUse) {
 				const att = await api.get<Array<{ userId: string; showId: string; status: string }>>(
 					`/attendance?showId=${show.id}`,
 				);
@@ -96,7 +125,7 @@ export function CallboardPage() {
 	}
 
 	function setThisWeek() {
-		setDateRange(getThisWeekRange());
+		setDateRange(getThisWeekRange(weekStartsOn));
 	}
 
 	function handlePrint() {

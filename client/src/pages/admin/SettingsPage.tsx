@@ -13,16 +13,26 @@ interface ImportResult {
 	skippedShows?: Array<{ date: string; showTime: string }>;
 }
 
+const WEEKDAY_OPTIONS: Array<{ value: number; label: string }> = [
+	{ value: 0, label: 'Sunday' },
+	{ value: 1, label: 'Monday' },
+	{ value: 2, label: 'Tuesday' },
+	{ value: 3, label: 'Wednesday' },
+	{ value: 4, label: 'Thursday' },
+	{ value: 5, label: 'Friday' },
+	{ value: 6, label: 'Saturday' },
+];
+
 interface OrgSettings {
 	showTitle: string | null;
-	showsPerWeek: number | null;
+	weekStartsOn: number | null;
 	darkDays: number[];
 }
 
 export function SettingsPage() {
 	const { user, refresh } = useAuth();
 	const [showTitle, setShowTitle] = useState('');
-	const [showsPerWeek, setShowsPerWeek] = useState<number | ''>(1);
+	const [weekStartsOn, setWeekStartsOn] = useState<number>(0);
 	const [darkDays, setDarkDays] = useState<number[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -39,7 +49,7 @@ export function SettingsPage() {
 			try {
 				const settings = await api.get<OrgSettings>('/organizations/me/settings');
 				setShowTitle(settings.showTitle ?? '');
-				setShowsPerWeek(settings.showsPerWeek ?? 1);
+				setWeekStartsOn(settings.weekStartsOn ?? 0);
 				setDarkDays(settings.darkDays ?? []);
 			} catch (err) {
 				setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to load' });
@@ -63,7 +73,7 @@ export function SettingsPage() {
 		try {
 			await api.patch('/organizations/me/settings', {
 				showTitle: showTitle.trim() || null,
-				showsPerWeek: showsPerWeek === '' ? null : Number(showsPerWeek),
+				weekStartsOn,
 				darkDays,
 			});
 			await refresh();
@@ -135,19 +145,23 @@ export function SettingsPage() {
 						</p>
 					</label>
 
-					<label className="field" htmlFor="showsPerWeek">
-						<span className="field-label">Number of shows per week</span>
-						<input
-							id="showsPerWeek"
-							type="number"
-							min={1}
-							value={showsPerWeek}
-							onChange={(e) => {
-								const v = e.target.value;
-								setShowsPerWeek(v === '' ? '' : Math.max(1, parseInt(v, 10) || 1));
-							}}
-							style={{ width: '7rem' }}
-						/>
+					<label className="field" htmlFor="weekStartsOn">
+						<span className="field-label">Week starts on</span>
+						<select
+							id="weekStartsOn"
+							value={weekStartsOn}
+							onChange={(e) => setWeekStartsOn(Number(e.target.value))}
+							style={{ width: '12rem' }}
+						>
+							{WEEKDAY_OPTIONS.map((opt) => (
+								<option key={opt.value} value={opt.value}>
+									{opt.label}
+								</option>
+							))}
+						</select>
+						<p className="muted" style={{ fontSize: '0.9rem', margin: 0 }}>
+							Callboard weekly view shows shows starting from this day.
+						</p>
 					</label>
 
 					<div className="field">

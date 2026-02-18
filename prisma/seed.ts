@@ -65,6 +65,8 @@ async function main() {
 
   const showSlots: Array<{ dayOffset: number; time: string }> = [
     { dayOffset: 0, time: "14:00" },   // Sun matinee
+    { dayOffset: 1, time: "19:00" },   // Mon
+    { dayOffset: 2, time: "19:00" },   // Tue
     { dayOffset: 3, time: "19:00" },   // Wed
     { dayOffset: 4, time: "19:00" },   // Thu
     { dayOffset: 5, time: "19:00" },   // Fri

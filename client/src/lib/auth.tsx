@@ -12,7 +12,7 @@ export interface User {
 		name: string;
 		slug: string;
 		showTitle?: string | null;
-		showsPerWeek?: number | null;
+		weekStartsOn?: number | null;
 		darkDays?: number[];
 	};
 }

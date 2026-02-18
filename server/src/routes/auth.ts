@@ -246,7 +246,7 @@ router.get("/me", async (req, res) => {
         role: true,
         organizationId: true,
         organization: {
-          select: { name: true, slug: true, showTitle: true, showsPerWeek: true, darkDays: true },
+          select: { name: true, slug: true, showTitle: true, weekStartsOn: true, darkDays: true },
         },
       },
     });
