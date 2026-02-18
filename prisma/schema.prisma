@@ -7,12 +7,15 @@ datasource db {
 }
 
 model Organization {
-  id   String @id @default(cuid())
-  name String
-  slug String @unique
+  id           String  @id @default(cuid())
+  name         String
+  slug         String  @unique
+  showTitle    String?
+  showsPerWeek Int?
+  darkDays     Int[]   @default([])
 
-  users       User[]
-  shows       Show[]
+  users User[]
+  shows Show[]
 }
 
 model User {

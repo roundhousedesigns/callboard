@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useAuth } from '../../lib/auth';
 import { CallboardTable, type AttendanceRecord, type Show } from '../../components/CallboardTable';
 import { api } from '../../lib/api';
 import type { User } from '../../lib/auth';
@@ -7,6 +8,7 @@ import { formatShowTime } from '../../lib/dateUtils';
 
 export function PastShowSheetPage() {
 	const { showId } = useParams<{ showId: string }>();
+	const { user } = useAuth();
 	const [show, setShow] = useState<Show | null>(null);
 	const [actors, setActors] = useState<User[]>([]);
 	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -64,13 +66,19 @@ export function PastShowSheetPage() {
 	if (error) return <div style={{ color: 'var(--error)' }}>{error}</div>;
 	if (!show) return <div>Show not found</div>;
 
+	const displayTitle =
+		user?.organization?.showTitle ?? user?.organization?.name ?? 'Sign-in sheet corrections';
+
 	return (
 		<div>
 			<div style={{ marginBottom: '1rem' }}>
 				<Link to="/admin/shows">Back to shows</Link>
 			</div>
-			<h1>Sign-in sheet corrections</h1>
-			<p style={{ color: 'var(--text-muted)' }}>
+			<h1>{displayTitle}</h1>
+			<p style={{ color: 'var(--text-muted)', marginTop: '-0.5rem' }}>
+				Sign-in sheet corrections
+			</p>
+			<p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
 				{new Date(show.date).toLocaleDateString()} - {formatShowTime(show.showTime)}
 			</p>
 			<CallboardTable

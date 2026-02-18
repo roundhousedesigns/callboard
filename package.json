@@ -14,7 +14,9 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:start": "docker compose up db -d",
+    "db:stop": "docker compose stop db"
   },
   "devDependencies": {
     "@types/papaparse": "^5.5.2",

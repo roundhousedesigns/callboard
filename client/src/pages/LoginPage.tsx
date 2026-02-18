@@ -11,6 +11,7 @@ export function LoginPage() {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const redirect = searchParams.get('redirect');
+	// Actors go to /actor; never auto sign them into the active show (they must use the QR flow).
 	const defaultRedirect = user?.role === 'admin' ? '/admin' : '/actor';
 
 	if (user) {

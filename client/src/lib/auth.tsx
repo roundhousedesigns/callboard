@@ -8,7 +8,13 @@ export interface User {
 	lastName: string;
 	role: 'admin' | 'actor';
 	organizationId: string;
-	organization?: { name: string; slug: string };
+	organization?: {
+		name: string;
+		slug: string;
+		showTitle?: string | null;
+		showsPerWeek?: number | null;
+		darkDays?: number[];
+	};
 }
 
 interface AuthContextValue {

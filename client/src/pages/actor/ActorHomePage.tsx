@@ -1,5 +1,6 @@
 import { useAuth } from '../../lib/auth';
 
+// This page does not trigger sign-in. Actors must sign in by scanning the QR code (/s/:token).
 export function ActorHomePage() {
 	const { user } = useAuth();
 

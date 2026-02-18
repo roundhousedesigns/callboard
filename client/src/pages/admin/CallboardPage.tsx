@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
 import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
-import { toLocalDateStr } from '../../lib/dateUtils';
+import { toLocalDateStr, getWeekBounds } from '../../lib/dateUtils';
+
+function getThisWeekRange() {
+	const { start, end } = getWeekBounds(new Date());
+	return { start: toLocalDateStr(start), end: toLocalDateStr(end) };
+}
 
 export function CallboardPage() {
+	const { user } = useAuth();
 	const [actors, setActors] = useState<User[]>([]);
 	const [shows, setShows] = useState<Show[]>([]);
 	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -14,11 +21,7 @@ export function CallboardPage() {
 	const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
 	useEffect(() => {
-		const today = new Date();
-		setDateRange({
-			start: toLocalDateStr(today),
-			end: toLocalDateStr(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)),
-		});
+		setDateRange(getThisWeekRange());
 	}, []);
 
 	const loadData = async (showLoading = true) => {
@@ -92,12 +95,27 @@ export function CallboardPage() {
 		}
 	}
 
+	function setThisWeek() {
+		setDateRange(getThisWeekRange());
+	}
+
+	function handlePrint() {
+		window.print();
+	}
+
 	if (loading) return <div>Loading...</div>;
+
+	const displayTitle =
+		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
 
 	return (
 		<div>
-			<h1>Callboard</h1>
+			<h1>{displayTitle}</h1>
+			<p style={{ color: 'var(--text-muted)', marginTop: '-0.5rem', marginBottom: '1rem' }}>
+				Callboard
+			</p>
 			<div
+				className="no-print"
 				style={{
 					display: 'flex',
 					gap: '1rem',
@@ -121,8 +139,14 @@ export function CallboardPage() {
 						onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
 					/>
 				</label>
+				<button type="button" onClick={setThisWeek}>
+					This Week
+				</button>
 				<button type="button" onClick={() => loadData(false)} disabled={refreshing || loading}>
 					{refreshing ? 'Refreshing...' : 'Refresh'}
+				</button>
+				<button type="button" onClick={handlePrint}>
+					Print report
 				</button>
 			</div>
 			<CallboardTable
@@ -130,6 +154,7 @@ export function CallboardPage() {
 				shows={shows}
 				attendance={attendance}
 				onSetStatus={handleSetStatus}
+				highlightNextUpcoming
 			/>
 		</div>
 	);

@@ -2,25 +2,30 @@
 
 A webapp for professional theatre companies to manage actor attendance. Replaces physical sign-in sheets with QR code sign-in, admin controls, and offline support.
 
+## Tech Stack
+
+- **Frontend**: React + Vite
+- **Backend**: Express API
+- **Database**: PostgreSQL with Prisma ORM
+- **Package Manager**: Yarn (workspaces)
+
 ## Features
 
-- **QR Code Sign-In**: Actors scan a unique QR code per show to sign in (must be logged in)
-- **Admin Controls**: Manually sign in actors, or mark as absent, vacation, or personal day
-- **Show Time**: Date + time (e.g. 14:00, 19:30); multiple shows per day
-- **Calendar Import**: Import performance calendar from CSV or Excel
-- **Attendance Reports**: View and print reports
-- **Offline Mode**: Print attendance sheet when offline; enter manual sign-ins when back online
+- **QR Code Sign-In** — Actors scan a unique QR code per show (requires login)
+- **Admin Controls** — Sign in actors, or mark absent, vacation, or personal day
+- **Calendar Import** — CSV or Excel with date and show time
+- **Callboard & Print** — View and print attendance sheets
+- **Offline Mode** — Print sheet when offline; enter sign-ins when back online (Dexie/IndexedDB)
+- **Settings** — Show title, shows per week, dark days (MTWTFSS)
 
-## Quick Start
+## Development
 
-### Development
-
-1. Start PostgreSQL (or use Docker):
+1. Start the database:
    ```bash
-   docker run -d --name callboard-db -e POSTGRES_USER=callboard -e POSTGRES_PASSWORD=callboard -e POSTGRES_DB=callboard -p 5432:5432 postgres:16-alpine
+   yarn db:start
    ```
 
-2. Copy `.env.example` to `.env` and set `DATABASE_URL`.
+2. Copy `.env.example` to `.env`.
 
 3. Set up the database:
    ```bash
@@ -33,20 +38,23 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
    yarn dev
    ```
 
-5. Open http://localhost:5173 and log in:
-   - Admin: `admin@demo.theatre` / `password123`
-   - Actor: `alice.anderson@demo.theatre` / `password123`
+5. Open http://localhost:5173 — Admin: `admin@demo.theatre` / Actor: `alice.anderson@demo.theatre` (password: `password123`)
 
-### Docker (Production)
+### Scripts
+
+| Script          | Description                   |
+|-----------------|-------------------------------|
+| `yarn dev`      | Run client + server           |
+| `yarn db:start` | Start PostgreSQL (Docker)     |
+| `yarn db:stop`  | Stop PostgreSQL               |
+| `yarn db:push`  | Apply schema                  |
+| `yarn db:seed`  | Seed demo data (3 weeks)      |
+| `yarn db:studio`| Prisma Studio                 |
+
+## Production
 
 ```bash
 docker compose up -d
 ```
 
-The app runs on port 3000. Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `CLIENT_URL` in the environment.
-
-## Project Structure
-
-- `client/` - React + Vite frontend
-- `server/` - Express API
-- `prisma/` - Database schema and migrations
+App runs on port 3000. Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `CLIENT_URL` (or use `.env`).

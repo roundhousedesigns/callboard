@@ -3,6 +3,30 @@ import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
 
+function QRCodeIcon() {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden
+		>
+			<rect x="3" y="3" width="7" height="7" rx="1" />
+			<rect x="14" y="3" width="7" height="7" rx="1" />
+			<rect x="3" y="14" width="7" height="7" rx="1" />
+			<rect x="14" y="14" width="3" height="3" rx="0.5" />
+			<rect x="19" y="14" width="2" height="2" rx="0.5" />
+			<rect x="14" y="19" width="2" height="2" rx="0.5" />
+		</svg>
+	);
+}
+
 interface Show {
 	id: string;
 	date: string;
@@ -16,8 +40,6 @@ export function ShowsPage() {
 	const [shows, setShows] = useState<Show[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [form, setForm] = useState({ date: '', showTime: '' });
-	const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
-
 	useEffect(() => {
 		api
 			.get<Show[]>('/shows')
@@ -71,21 +93,26 @@ export function ShowsPage() {
 		}
 	}
 
+	const now = Date.now();
 	const currentShow = shows.find((s) => !!s.activeAt) ?? null;
 	const upcomingShows = shows
-		.filter((s) => !s.activeAt && !s.lockedAt)
+		.filter((s) => {
+			if (s.activeAt || s.lockedAt) return false;
+			const dt = new Date(s.date);
+			const [h, m] = s.showTime.split(':').map(Number);
+			dt.setHours(h, m || 0, 0, 0);
+			return dt.getTime() > now;
+		})
 		.sort(
 			(a, b) =>
 				new Date(a.date).getTime() - new Date(b.date).getTime() ||
 				a.showTime.localeCompare(b.showTime),
 		);
-	const pastShows = shows
-		.filter((s) => !!s.lockedAt)
-		.sort(
-			(a, b) =>
-				new Date(b.date).getTime() - new Date(a.date).getTime() ||
-				b.showTime.localeCompare(a.showTime),
-		);
+	const nextUpcomingShowId = upcomingShows[0]?.id ?? null;
+	const displayShows = currentShow
+		? [currentShow, ...upcomingShows]
+		: upcomingShows;
+	const highlightedShowId = currentShow?.id ?? nextUpcomingShowId;
 
 	if (loading) return <div>Loading...</div>;
 
@@ -116,100 +143,63 @@ export function ShowsPage() {
 				<button type="submit">Add show</button>
 			</form>
 
-			{currentShow && (
-				<div
-					style={{
-						marginBottom: '1.5rem',
-						padding: '0.75rem',
-						border: '1px solid var(--border)',
-						borderRadius: '8px',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'space-between',
-						gap: '1rem',
-						flexWrap: 'wrap',
-					}}
-				>
-					<div>
-						<strong>Current show:</strong> {new Date(currentShow.date).toLocaleDateString()} -{' '}
-						{formatShowTime(currentShow.showTime)}
-					</div>
-					<div style={{ display: 'flex', gap: '0.5rem' }}>
-						<Link to="/admin/qr">Open current QR</Link>
-						<button onClick={() => handleCloseSignIn(currentShow.id)}>Close sign-in</button>
-					</div>
-				</div>
-			)}
-
-			<div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-				<button
-					type="button"
-					onClick={() => setTab('upcoming')}
-					style={{
-						background: tab === 'upcoming' ? 'var(--bg-hover)' : 'var(--bg-elevated)',
-					}}
-				>
-					Upcoming shows
-				</button>
-				<button
-					type="button"
-					onClick={() => setTab('past')}
-					style={{
-						background: tab === 'past' ? 'var(--bg-hover)' : 'var(--bg-elevated)',
-					}}
-				>
-					Past shows
-				</button>
-			</div>
-
 			<table>
 				<thead>
 					<tr>
 						<th>Date</th>
 						<th>Time</th>
-						<th>Status</th>
 						<th></th>
 					</tr>
 				</thead>
 				<tbody>
-					{tab === 'upcoming' &&
-						upcomingShows.map((show) => (
-							<tr key={show.id}>
+					{displayShows.map((show) => {
+						const isHighlighted = show.id === highlightedShowId;
+						return (
+							<tr
+								key={show.id}
+								style={
+									isHighlighted
+										? {
+												background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+												borderLeft: '3px solid var(--accent)',
+											}
+										: undefined
+								}
+							>
 								<td>{new Date(show.date).toLocaleDateString()}</td>
 								<td>{formatShowTime(show.showTime)}</td>
-								<td>
-									<span style={{ color: 'var(--text-muted)' }}>Scheduled</span>
-								</td>
-								<td>
-									<button onClick={() => handleActivate(show.id)}>Open Sign-in</button>
-									<button onClick={() => handleDelete(show.id)}>Delete</button>
+								<td style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+									{show.activeAt ? (
+										<>
+											<Link
+												to="/admin/qr"
+												aria-label="Open QR code"
+												style={{
+													display: 'inline-flex',
+													alignItems: 'center',
+													color: 'var(--accent)',
+												}}
+											>
+												<QRCodeIcon />
+											</Link>
+											<button onClick={() => handleCloseSignIn(show.id)}>Close sign-in</button>
+										</>
+									) : (
+										<>
+											{!currentShow && show.id === nextUpcomingShowId ? (
+												<button onClick={() => handleActivate(show.id)}>Open Sign-in</button>
+											) : null}
+											<button onClick={() => handleDelete(show.id)}>Delete</button>
+										</>
+									)}
 								</td>
 							</tr>
-						))}
-					{tab === 'past' &&
-						pastShows.map((show) => (
-							<tr key={show.id}>
-								<td>{new Date(show.date).toLocaleDateString()}</td>
-								<td>{formatShowTime(show.showTime)}</td>
-								<td>
-									<span style={{ color: 'var(--warning)' }}>Closed</span>
-								</td>
-								<td>
-									<Link to={`/admin/shows/past/${show.id}`}>View sign-in sheet</Link>
-								</td>
-							</tr>
-						))}
-					{tab === 'upcoming' && upcomingShows.length === 0 && (
+						);
+					})}
+					{displayShows.length === 0 && (
 						<tr>
-							<td colSpan={4} style={{ color: 'var(--text-muted)' }}>
+							<td colSpan={3} style={{ color: 'var(--text-muted)' }}>
 								No upcoming shows.
-							</td>
-						</tr>
-					)}
-					{tab === 'past' && pastShows.length === 0 && (
-						<tr>
-							<td colSpan={4} style={{ color: 'var(--text-muted)' }}>
-								No past shows yet.
 							</td>
 						</tr>
 					)}

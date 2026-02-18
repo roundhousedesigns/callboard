@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import type { User } from '../lib/auth';
 import { formatShowTime } from '../lib/dateUtils';
 import { StatusIcon, statusLabels } from './StatusIcon';
@@ -25,6 +26,8 @@ interface CallboardTableProps {
 	attendance: AttendanceRecord[];
 	onSetStatus?: (userId: string, showId: string, status: AttendanceRecord['status'] | null) => void;
 	readOnly?: boolean;
+	/** When true, visually highlights the next upcoming show column */
+	highlightNextUpcoming?: boolean;
 }
 
 const statusColors: Record<AttendanceRecord['status'], string> = {
@@ -197,15 +200,65 @@ function StatusSelect({
 	);
 }
 
+function QRCodeIcon() {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			width="18"
+			height="18"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden
+			style={{ display: 'inline-block', verticalAlign: 'middle', marginLeft: '4px' }}
+		>
+			<rect x="3" y="3" width="7" height="7" rx="1" />
+			<rect x="14" y="3" width="7" height="7" rx="1" />
+			<rect x="3" y="14" width="7" height="7" rx="1" />
+			<rect x="14" y="14" width="3" height="3" rx="0.5" />
+			<rect x="19" y="14" width="2" height="2" rx="0.5" />
+			<rect x="14" y="19" width="2" height="2" rx="0.5" />
+		</svg>
+	);
+}
+
+function getShowDateTime(show: Show): number {
+	const [h, m] = show.showTime.split(':').map(Number);
+	const d = new Date(show.date);
+	d.setHours(h, m, 0, 0);
+	return d.getTime();
+}
+
 export function CallboardTable({
 	actors,
 	shows,
 	attendance,
 	onSetStatus,
 	readOnly = false,
+	highlightNextUpcoming = false,
 }: CallboardTableProps) {
 	const getStatus = (userId: string, showId: string) =>
 		attendance.find((a) => a.userId === userId && a.showId === showId)?.status;
+
+	const nextUpcomingShowId =
+		highlightNextUpcoming && shows.length > 0
+			? (() => {
+					const now = Date.now();
+					const next = shows.find((s) => getShowDateTime(s) > now);
+					return next?.id ?? null;
+				})()
+			: null;
+
+	const isHighlighted = (showId: string) => showId === nextUpcomingShowId;
+	const highlightStyle: React.CSSProperties = {
+		background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+		borderLeft: '3px solid var(--accent)',
+		borderRight: '3px solid var(--accent)',
+	};
+	const thHighlightStyle = highlightStyle;
 
 	return (
 		<div style={{ overflowX: 'auto' }}>
@@ -213,15 +266,36 @@ export function CallboardTable({
 				<thead>
 					<tr>
 						<th style={{ minWidth: '140px' }}>Actor</th>
-						{shows.map((s) => (
-							<th key={s.id} style={{ minWidth: '100px' }}>
-								{new Date(s.date).toLocaleDateString()}
-								<br />
-								<span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
-									{formatShowTime(s.showTime)}
-								</span>
-							</th>
-						))}
+						{shows.map((s) => {
+							const d = new Date(s.date);
+							const dayLabel = d.toLocaleDateString(undefined, { weekday: 'long' });
+							const dateLabel = d.toLocaleDateString(undefined, {
+								month: 'numeric',
+								day: 'numeric',
+							});
+							const timeLabel = formatShowTime(s.showTime).toLowerCase().replace(' ', '');
+							const isActiveShow = !!s.activeAt;
+							return (
+								<th
+									key={s.id}
+									style={{
+										minWidth: '100px',
+										...(isHighlighted(s.id) ? thHighlightStyle : {}),
+									}}
+								>
+									{dayLabel} {dateLabel}
+									<br />
+									<span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
+										{timeLabel}
+										{isActiveShow && (
+											<Link to="/admin/qr" title="Open QR code" className="no-print" style={{ display: 'inline-flex', alignItems: 'center' }}>
+												<QRCodeIcon />
+											</Link>
+										)}
+									</span>
+								</th>
+							);
+						})}
 					</tr>
 				</thead>
 				<tbody>
@@ -233,7 +307,10 @@ export function CallboardTable({
 							{shows.map((show) => {
 								const status = getStatus(actor.id, show.id);
 								return (
-									<td key={show.id}>
+									<td
+										key={show.id}
+										style={isHighlighted(show.id) ? highlightStyle : undefined}
+									>
 										{readOnly ? (
 											status ? (
 												<span

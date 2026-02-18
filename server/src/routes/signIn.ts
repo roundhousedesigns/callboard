@@ -4,6 +4,9 @@ import { authMiddleware, actorOnly } from "../middleware/auth.js";
 
 const router = Router();
 
+// Actors may only sign themselves in via this endpoint when visiting a URL that
+// contains the show's sign-in token (e.g. from scanning the QR code). Do not
+// add any "auto sign-in to active show" on login or when visiting /actor.
 router.get("/:token", authMiddleware, actorOnly, async (req, res) => {
   const token = req.params.token;
 

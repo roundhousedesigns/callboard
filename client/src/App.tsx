@@ -6,10 +6,9 @@ import { CallboardPage } from './pages/admin/CallboardPage';
 import { ActorsPage } from './pages/admin/ActorsPage';
 import { ShowsPage } from './pages/admin/ShowsPage';
 import { QRDisplayPage } from './pages/admin/QRDisplayPage';
-import { ReportsPage } from './pages/admin/ReportsPage';
 import { OfflinePrintSheetPage } from './pages/admin/OfflinePrintSheetPage';
 import { ManualEntryPage } from './pages/admin/ManualEntryPage';
-import { CalendarImportPage } from './pages/admin/CalendarImportPage';
+import { SettingsPage } from './pages/admin/SettingsPage';
 import { PastShowSheetPage } from './pages/admin/PastShowSheetPage';
 import { SignInLandingPage } from './pages/actor/SignInLandingPage';
 import { ActorHomePage } from './pages/actor/ActorHomePage';
@@ -56,10 +55,9 @@ export default function App() {
 				<Route path="shows" element={<ShowsPage />} />
 				<Route path="qr" element={<QRDisplayPage />} />
 				<Route path="shows/past/:showId" element={<PastShowSheetPage />} />
-				<Route path="import" element={<CalendarImportPage />} />
-				<Route path="reports" element={<ReportsPage />} />
 				<Route path="offline" element={<OfflinePrintSheetPage />} />
 				<Route path="manual-entry" element={<ManualEntryPage />} />
+				<Route path="settings" element={<SettingsPage />} />
 			</Route>
 			<Route
 				path="/actor"

@@ -23,3 +23,14 @@ export function toLocalDateStr(d: Date): string {
 	const day = String(d.getDate()).padStart(2, '0');
 	return `${y}-${m}-${day}`;
 }
+
+/** Start/end of the week containing the given date (Sunday–Saturday). */
+export function getWeekBounds(d: Date): { start: Date; end: Date } {
+	const start = new Date(d);
+	start.setDate(start.getDate() - start.getDay());
+	start.setHours(0, 0, 0, 0);
+	const end = new Date(start);
+	end.setDate(end.getDate() + 6);
+	end.setHours(23, 59, 59, 999);
+	return { start, end };
+}

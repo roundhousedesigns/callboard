@@ -57,42 +57,44 @@ async function main() {
     });
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // 3 weeks of shows, starting with the current week (Sun–Sat, matching app's getWeekBounds)
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
 
-  await prisma.show.upsert({
-    where: {
-      organizationId_date_time: {
-        organizationId: org.id,
-        date: today,
-        time: "14:00",
-      },
-    },
-    update: {},
-    create: {
-        organizationId: org.id,
-        date: today,
-        time: "14:00",
-      },
-  });
+  const showSlots: Array<{ dayOffset: number; time: string }> = [
+    { dayOffset: 0, time: "14:00" },   // Sun matinee
+    { dayOffset: 3, time: "19:00" },   // Wed
+    { dayOffset: 4, time: "19:00" },   // Thu
+    { dayOffset: 5, time: "19:00" },   // Fri
+    { dayOffset: 6, time: "14:00" },   // Sat matinee
+    { dayOffset: 6, time: "19:00" },   // Sat evening
+  ];
 
-  await prisma.show.upsert({
-    where: {
-      organizationId_date_time: {
-        organizationId: org.id,
-        date: today,
-        time: "19:00",
-      },
-    },
-    update: {},
-    create: {
-        organizationId: org.id,
-        date: today,
-        time: "19:00",
-      },
-  });
+  for (let week = 0; week < 3; week++) {
+    const weekDate = new Date(weekStart);
+    weekDate.setDate(weekStart.getDate() + week * 7);
+    for (const slot of showSlots) {
+      const showDate = new Date(weekDate);
+      showDate.setDate(weekDate.getDate() + slot.dayOffset);
+      await prisma.show.upsert({
+        where: {
+          organizationId_date_showTime: {
+            organizationId: org.id,
+            date: showDate,
+            showTime: slot.time,
+          },
+        },
+        update: {},
+        create: {
+          organizationId: org.id,
+          date: showDate,
+          showTime: slot.time,
+        },
+      });
+    }
+  }
 
   console.log("Seed complete.");
   console.log("Admin: admin@demo.theatre / password123");

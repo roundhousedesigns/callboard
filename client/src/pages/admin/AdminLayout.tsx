@@ -63,24 +63,6 @@ export function AdminLayout() {
 						Current QR
 					</NavLink>
 					<NavLink
-						to="/admin/import"
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Import
-					</NavLink>
-					<NavLink
-						to="/admin/reports"
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Reports
-					</NavLink>
-					<NavLink
 						to="/admin/offline"
 						style={({ isActive }) => ({
 							fontWeight: isActive ? 600 : 400,
@@ -89,10 +71,19 @@ export function AdminLayout() {
 					>
 						Offline
 					</NavLink>
+					<NavLink
+						to="/admin/settings"
+						style={({ isActive }) => ({
+							fontWeight: isActive ? 600 : 400,
+							color: isActive ? 'var(--accent)' : 'var(--text)',
+						})}
+					>
+						Settings
+					</NavLink>
 				</nav>
 				<div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
 					<span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-						{user?.organization?.name ?? 'Admin'}
+						{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
 					</span>
 					<button onClick={handleLogout}>Log out</button>
 				</div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
 import type { User } from '../../lib/auth';
@@ -7,6 +8,7 @@ import { toLocalDateStr } from '../../lib/dateUtils';
 import { db } from '../../lib/offlineDb';
 
 export function OfflinePrintSheetPage() {
+	const { user } = useAuth();
 	const [actors, setActors] = useState<User[]>([]);
 	const [shows, setShows] = useState<Show[]>([]);
 	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -144,9 +146,13 @@ export function OfflinePrintSheetPage() {
 
 	if (loading) return <div>Loading...</div>;
 
+	const displayTitle =
+		user?.organization?.showTitle ?? user?.organization?.name ?? 'Offline Attendance Sheet';
+
 	return (
 		<div>
-			<h1>Offline Attendance Sheet</h1>
+			<h1>{displayTitle}</h1>
+			<p style={{ color: 'var(--text-muted)', marginTop: '-0.5rem' }}>Offline Attendance Sheet</p>
 			<p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
 				{online
 					? 'You are online. Data is synced. Use this page to print a sheet before going offline.'

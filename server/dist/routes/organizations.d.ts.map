@@ -1,1 +1,1 @@
-{"version":3,"file":"organizations.d.ts","sourceRoot":"","sources":["../../src/routes/organizations.ts"],"names":[],"mappings":"AAIA,QAAA,MAAM,MAAM,4CAAW,CAAC;AAqCxB,OAAO,EAAE,MAAM,IAAI,kBAAkB,EAAE,CAAC"}
+{"version":3,"file":"organizations.d.ts","sourceRoot":"","sources":["../../src/routes/organizations.ts"],"names":[],"mappings":"AAKA,QAAA,MAAM,MAAM,4CAAW,CAAC;AA+ExB,OAAO,EAAE,MAAM,IAAI,kBAAkB,EAAE,CAAC"}
