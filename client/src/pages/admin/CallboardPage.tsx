@@ -103,51 +103,55 @@ export function CallboardPage() {
 		window.print();
 	}
 
-	if (loading) return <div>Loading...</div>;
+	if (loading) return <div className="muted">Loading...</div>;
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
 
 	return (
 		<div>
-			<h1>{displayTitle}</h1>
-			<p style={{ color: 'var(--text-muted)', marginTop: '-0.5rem', marginBottom: '1rem' }}>
-				Callboard
-			</p>
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">{displayTitle}</h1>
+					<p className="page-subtitle">Callboard</p>
+				</div>
+			</div>
 			<div
 				className="no-print"
-				style={{
-					display: 'flex',
-					gap: '1rem',
-					marginBottom: '1rem',
-					flexWrap: 'wrap',
-				}}
+				style={{ marginBottom: '1rem' }}
 			>
-				<label>
-					Start:{' '}
-					<input
-						type="date"
-						value={dateRange.start}
-						onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
-					/>
-				</label>
-				<label>
-					End:{' '}
-					<input
-						type="date"
-						value={dateRange.end}
-						onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
-					/>
-				</label>
-				<button type="button" onClick={setThisWeek}>
-					This Week
-				</button>
-				<button type="button" onClick={() => loadData(false)} disabled={refreshing || loading}>
-					{refreshing ? 'Refreshing...' : 'Refresh'}
-				</button>
-				<button type="button" onClick={handlePrint}>
-					Print report
-				</button>
+				<div className="toolbar">
+					<label className="field">
+						<span className="field-label">Start</span>
+						<input
+							type="date"
+							value={dateRange.start}
+							onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
+						/>
+					</label>
+					<label className="field">
+						<span className="field-label">End</span>
+						<input
+							type="date"
+							value={dateRange.end}
+							onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
+						/>
+					</label>
+					<button className="btn btn--sm" type="button" onClick={setThisWeek}>
+						This Week
+					</button>
+					<button
+						className="btn btn--sm btn--ghost"
+						type="button"
+						onClick={() => loadData(false)}
+						disabled={refreshing || loading}
+					>
+						{refreshing ? 'Refreshing...' : 'Refresh'}
+					</button>
+					<button className="btn btn--sm btn--primary" type="button" onClick={handlePrint}>
+						Print report
+					</button>
+				</div>
 			</div>
 			<CallboardTable
 				actors={actors}

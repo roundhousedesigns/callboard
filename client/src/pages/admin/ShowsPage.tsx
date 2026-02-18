@@ -114,97 +114,126 @@ export function ShowsPage() {
 		: upcomingShows;
 	const highlightedShowId = currentShow?.id ?? nextUpcomingShowId;
 
-	if (loading) return <div>Loading...</div>;
+	if (loading) return <div className="muted">Loading...</div>;
 
 	return (
 		<div>
-			<h1>Shows</h1>
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Shows</h1>
+					<p className="page-subtitle">Create upcoming shows and open sign-in.</p>
+				</div>
+			</div>
 			<form
 				onSubmit={handleCreate}
-				style={{
-					display: 'flex',
-					gap: '0.5rem',
-					flexWrap: 'wrap',
-					marginBottom: '1.5rem',
-				}}
+				className="toolbar no-print"
+				style={{ marginBottom: '1rem' }}
 			>
-				<input
-					type="date"
-					value={form.date}
-					onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-					required
-				/>
-				<input
-					type="time"
-					value={form.showTime}
-					onChange={(e) => setForm((p) => ({ ...p, showTime: e.target.value }))}
-					required
-				/>
-				<button type="submit">Add show</button>
+				<label className="field">
+					<span className="field-label">Date</span>
+					<input
+						type="date"
+						value={form.date}
+						onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
+						required
+					/>
+				</label>
+				<label className="field">
+					<span className="field-label">Time</span>
+					<input
+						type="time"
+						value={form.showTime}
+						onChange={(e) => setForm((p) => ({ ...p, showTime: e.target.value }))}
+						required
+					/>
+				</label>
+				<button className="btn btn--primary btn--sm" type="submit">
+					Add show
+				</button>
 			</form>
 
-			<table>
-				<thead>
-					<tr>
-						<th>Date</th>
-						<th>Time</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-					{displayShows.map((show) => {
-						const isHighlighted = show.id === highlightedShowId;
-						return (
-							<tr
-								key={show.id}
-								style={
-									isHighlighted
-										? {
-												background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-												borderLeft: '3px solid var(--accent)',
-											}
-										: undefined
-								}
-							>
-								<td>{new Date(show.date).toLocaleDateString()}</td>
-								<td>{formatShowTime(show.showTime)}</td>
-								<td style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-									{show.activeAt ? (
-										<>
-											<Link
-												to="/admin/qr"
-												aria-label="Open QR code"
-												style={{
-													display: 'inline-flex',
-													alignItems: 'center',
-													color: 'var(--accent)',
-												}}
-											>
-												<QRCodeIcon />
-											</Link>
-											<button onClick={() => handleCloseSignIn(show.id)}>Close sign-in</button>
-										</>
-									) : (
-										<>
-											{!currentShow && show.id === nextUpcomingShowId ? (
-												<button onClick={() => handleActivate(show.id)}>Open Sign-in</button>
-											) : null}
-											<button onClick={() => handleDelete(show.id)}>Delete</button>
-										</>
-									)}
+			<div className="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th>Date</th>
+							<th>Time</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						{displayShows.map((show) => {
+							const isHighlighted = show.id === highlightedShowId;
+							return (
+								<tr
+									key={show.id}
+									style={
+										isHighlighted
+											? {
+													background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
+													borderLeft: '3px solid var(--accent)',
+												}
+											: undefined
+									}
+								>
+									<td>{new Date(show.date).toLocaleDateString()}</td>
+									<td>{formatShowTime(show.showTime)}</td>
+									<td
+										className="no-print"
+										style={{
+											display: 'flex',
+											gap: '0.5rem',
+											flexWrap: 'wrap',
+											alignItems: 'center',
+											justifyContent: 'flex-end',
+										}}
+									>
+										{show.activeAt ? (
+											<>
+												<Link
+													to="/admin/qr"
+													aria-label="Open QR code"
+													className="btn btn--sm btn--ghost"
+													style={{ padding: '0.35rem 0.5rem' }}
+												>
+													<QRCodeIcon />
+												</Link>
+												<button
+													className="btn btn--sm"
+													onClick={() => handleCloseSignIn(show.id)}
+												>
+													Close sign-in
+												</button>
+											</>
+										) : (
+											<>
+												{!currentShow && show.id === nextUpcomingShowId ? (
+													<button
+														className="btn btn--sm btn--primary"
+														onClick={() => handleActivate(show.id)}
+													>
+														Open sign-in
+													</button>
+												) : null}
+												<button className="btn btn--sm btn--danger" onClick={() => handleDelete(show.id)}>
+													Delete
+												</button>
+											</>
+										)}
+									</td>
+								</tr>
+							);
+						})}
+						{displayShows.length === 0 && (
+							<tr>
+								<td colSpan={3} className="muted">
+									No upcoming shows.
 								</td>
 							</tr>
-						);
-					})}
-					{displayShows.length === 0 && (
-						<tr>
-							<td colSpan={3} style={{ color: 'var(--text-muted)' }}>
-								No upcoming shows.
-							</td>
-						</tr>
-					)}
-				</tbody>
-			</table>
+						)}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 }

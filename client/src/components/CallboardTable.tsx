@@ -107,6 +107,7 @@ function StatusSelect({
 				style={{
 					border: 'none',
 					background: 'transparent',
+					boxShadow: 'none',
 					color: value ? statusColors[value] : 'var(--text-muted)',
 					cursor: 'pointer',
 					padding: '2px',
@@ -158,6 +159,7 @@ function StatusSelect({
 									style={{
 										border: 'none',
 										background: 'transparent',
+										boxShadow: 'none',
 										color: 'var(--text-muted)',
 										cursor: 'pointer',
 										padding: '6px',
@@ -182,6 +184,7 @@ function StatusSelect({
 									style={{
 										border: 'none',
 										background: value === opt.value ? 'var(--bg-hover)' : 'transparent',
+										boxShadow: 'none',
 										color: statusColors[opt.value],
 										cursor: 'pointer',
 										padding: '6px',
@@ -261,7 +264,7 @@ export function CallboardTable({
 	const thHighlightStyle = highlightStyle;
 
 	return (
-		<div style={{ overflowX: 'auto' }}>
+		<div className="table-wrap">
 			<table>
 				<thead>
 					<tr>
@@ -288,7 +291,12 @@ export function CallboardTable({
 									<span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
 										{timeLabel}
 										{isActiveShow && (
-											<Link to="/admin/qr" title="Open QR code" className="no-print" style={{ display: 'inline-flex', alignItems: 'center' }}>
+											<Link
+												to="/admin/qr"
+												title="Open QR code"
+												className="btn btn--sm btn--ghost no-print"
+												style={{ padding: '0.2rem 0.35rem', marginLeft: '0.25rem' }}
+											>
 												<QRCodeIcon />
 											</Link>
 										)}

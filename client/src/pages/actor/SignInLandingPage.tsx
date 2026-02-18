@@ -49,23 +49,26 @@ export function SignInLandingPage() {
 	}, [token, user, loading, navigate]);
 
 	if (loading || (!result && !error)) {
-		return <div style={{ padding: '2rem', textAlign: 'center' }}>Processing sign-in...</div>;
+		return (
+			<div className="auth-shell">
+				<div className="card auth-card" style={{ textAlign: 'center' }}>
+					<p className="muted" style={{ margin: 0 }}>
+						Processing sign-in...
+					</p>
+				</div>
+			</div>
+		);
 	}
 
 	if (error) {
 		return (
-			<div
-				style={{
-					minHeight: '100vh',
-					display: 'flex',
-					flexDirection: 'column',
-					alignItems: 'center',
-					justifyContent: 'center',
-					padding: '1rem',
-				}}
-			>
-				<h2 style={{ color: 'var(--error)' }}>Sign-in Failed</h2>
-				<p>{error}</p>
+			<div className="auth-shell">
+				<div className="card auth-card stack" style={{ textAlign: 'center' }}>
+					<h2 style={{ color: 'var(--error)', margin: 0 }}>Sign-in failed</h2>
+					<p className="muted" style={{ margin: 0 }}>
+						{error}
+					</p>
+				</div>
 			</div>
 		);
 	}
@@ -75,22 +78,15 @@ export function SignInLandingPage() {
 		: 'this show';
 
 	return (
-		<div
-			style={{
-				minHeight: '100vh',
-				display: 'flex',
-				flexDirection: 'column',
-				alignItems: 'center',
-				justifyContent: 'center',
-				padding: '1rem',
-			}}
-		>
-			<h2 style={{ color: 'var(--success)' }}>You're signed in!</h2>
-			<p>
-				{result?.alreadySignedIn
-					? `You had already signed in for ${showLabel}.`
-					: `Successfully signed in for ${showLabel}.`}
-			</p>
+		<div className="auth-shell">
+			<div className="card auth-card stack" style={{ textAlign: 'center' }}>
+				<h2 style={{ color: 'var(--success)', margin: 0 }}>You're signed in</h2>
+				<p className="muted" style={{ margin: 0 }}>
+					{result?.alreadySignedIn
+						? `You had already signed in for ${showLabel}.`
+						: `Successfully signed in for ${showLabel}.`}
+				</p>
+			</div>
 		</div>
 	);
 }

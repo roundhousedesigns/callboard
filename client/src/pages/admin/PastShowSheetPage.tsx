@@ -62,24 +62,28 @@ export function PastShowSheetPage() {
 		}
 	}
 
-	if (loading) return <div>Loading...</div>;
-	if (error) return <div style={{ color: 'var(--error)' }}>{error}</div>;
-	if (!show) return <div>Show not found</div>;
+	if (loading) return <div className="muted">Loading...</div>;
+	if (error) return <div className="alert alert--error">{error}</div>;
+	if (!show) return <div className="alert">Show not found.</div>;
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Sign-in sheet corrections';
 
 	return (
 		<div>
-			<div style={{ marginBottom: '1rem' }}>
-				<Link to="/admin/shows">Back to shows</Link>
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">{displayTitle}</h1>
+					<p className="page-subtitle">Sign-in sheet corrections</p>
+				</div>
+				<div className="no-print">
+					<Link className="btn btn--sm btn--ghost" to="/admin/shows">
+						Back to shows
+					</Link>
+				</div>
 			</div>
-			<h1>{displayTitle}</h1>
-			<p style={{ color: 'var(--text-muted)', marginTop: '-0.5rem' }}>
-				Sign-in sheet corrections
-			</p>
-			<p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
-				{new Date(show.date).toLocaleDateString()} - {formatShowTime(show.showTime)}
+			<p className="muted">
+				{new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
 			</p>
 			<CallboardTable
 				actors={actors}

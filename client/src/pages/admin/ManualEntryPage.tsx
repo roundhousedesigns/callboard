@@ -58,23 +58,22 @@ export function ManualEntryPage() {
 		}
 	}
 
-	if (loading) return <div>Loading...</div>;
+	if (loading) return <div className="muted">Loading...</div>;
 
 	return (
 		<div>
-			<h1>Manual Sign-In Entry</h1>
-			<p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-				Enter sign-ins from a printed attendance sheet after internet is restored.
-			</p>
-			<form onSubmit={handleSubmit} style={{ maxWidth: '500px' }}>
-				<div style={{ marginBottom: '1rem' }}>
-					<label style={{ display: 'block', marginBottom: '0.5rem' }}>Show</label>
-					<select
-						value={selectedShow}
-						onChange={(e) => setSelectedShow(e.target.value)}
-						required
-						style={{ width: '100%' }}
-					>
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Manual Sign-In Entry</h1>
+					<p className="page-subtitle">
+						Enter sign-ins from a printed attendance sheet after internet is restored.
+					</p>
+				</div>
+			</div>
+			<form onSubmit={handleSubmit} className="card card--flat stack" style={{ maxWidth: '34rem' }}>
+				<label className="field">
+					<span className="field-label">Show</span>
+					<select value={selectedShow} onChange={(e) => setSelectedShow(e.target.value)} required>
 						<option value="">Select a show</option>
 						{shows.map((s) => (
 							<option key={s.id} value={s.id}>
@@ -82,28 +81,12 @@ export function ManualEntryPage() {
 							</option>
 						))}
 					</select>
-				</div>
-				<div style={{ marginBottom: '1rem' }}>
-					<label style={{ display: 'block', marginBottom: '0.5rem' }}>Actors who signed in</label>
-					<div
-						style={{
-							maxHeight: '300px',
-							overflowY: 'auto',
-							border: '1px solid var(--border)',
-							borderRadius: '6px',
-							padding: '0.5rem',
-						}}
-					>
+				</label>
+				<div className="field">
+					<span className="field-label">Actors who signed in</span>
+					<div className="scrollbox">
 						{actors.map((actor) => (
-							<label
-								key={actor.id}
-								style={{
-									display: 'flex',
-									alignItems: 'center',
-									gap: '0.5rem',
-									padding: '0.25rem 0',
-								}}
-							>
+							<label key={actor.id} className="checkbox-row" style={{ padding: '0.25rem 0' }}>
 								<input
 									type="checkbox"
 									checked={selectedActors.has(actor.id)}
@@ -115,20 +98,11 @@ export function ManualEntryPage() {
 					</div>
 				</div>
 				{message && (
-					<div
-						style={{
-							marginBottom: '1rem',
-							padding: '0.5rem',
-							background: message.includes('Success')
-								? 'rgba(63, 185, 80, 0.2)'
-								: 'rgba(248, 81, 73, 0.2)',
-							borderRadius: '6px',
-						}}
-					>
+					<div className={`alert ${message.includes('Success') ? 'alert--success' : 'alert--error'}`}>
 						{message}
 					</div>
 				)}
-				<button type="submit" disabled={submitting || selectedActors.size === 0}>
+				<button className="btn btn--primary" type="submit" disabled={submitting || selectedActors.size === 0}>
 					{submitting ? 'Submitting...' : 'Submit sign-ins'}
 				</button>
 			</form>

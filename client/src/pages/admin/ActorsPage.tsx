@@ -81,107 +81,146 @@ export function ActorsPage() {
 		}
 	}
 
-	if (loading) return <div>Loading...</div>;
+	if (loading) return <div className="muted">Loading...</div>;
 
 	return (
 		<div>
-			<h1>Actors</h1>
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Actors</h1>
+					<p className="page-subtitle">Add and manage actor accounts.</p>
+				</div>
+			</div>
 			<form
 				onSubmit={handleCreate}
-				style={{
-					display: 'flex',
-					gap: '0.5rem',
-					flexWrap: 'wrap',
-					marginBottom: '1.5rem',
-				}}
+				className="toolbar no-print"
+				style={{ marginBottom: '1rem' }}
 			>
-				<input
-					placeholder="First name"
-					value={form.firstName}
-					onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-					required
-				/>
-				<input
-					placeholder="Last name"
-					value={form.lastName}
-					onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-					required
-				/>
-				<input
-					type="email"
-					placeholder="Email"
-					value={form.email}
-					onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-					required
-				/>
-				<input
-					type="password"
-					placeholder="Password"
-					value={form.password}
-					onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-					required
-				/>
-				<button type="submit">Add actor</button>
+				<label className="field">
+					<span className="field-label">First name</span>
+					<input
+						placeholder="First name"
+						value={form.firstName}
+						onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+						required
+					/>
+				</label>
+				<label className="field">
+					<span className="field-label">Last name</span>
+					<input
+						placeholder="Last name"
+						value={form.lastName}
+						onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+						required
+					/>
+				</label>
+				<label className="field" style={{ minWidth: '16rem' }}>
+					<span className="field-label">Email</span>
+					<input
+						type="email"
+						placeholder="Email"
+						value={form.email}
+						onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+						required
+					/>
+				</label>
+				<label className="field">
+					<span className="field-label">Password</span>
+					<input
+						type="password"
+						placeholder="Password"
+						value={form.password}
+						onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+						required
+					/>
+				</label>
+				<button className="btn btn--sm btn--primary" type="submit">
+					Add actor
+				</button>
 			</form>
-			<table>
-				<thead>
-					<tr>
-						<th>Name</th>
-						<th>Email</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-					{actors.map((actor) => (
-						<tr key={actor.id}>
-							{editing === actor.id ? (
-								<>
-									<td>
-										<input
-											value={editForm.firstName}
-											onChange={(e) => setEditForm((p) => ({ ...p, firstName: e.target.value }))}
-											placeholder="First name"
-										/>
-										<input
-											value={editForm.lastName}
-											onChange={(e) => setEditForm((p) => ({ ...p, lastName: e.target.value }))}
-											placeholder="Last name"
-										/>
-									</td>
-									<td>
-										<input
-											type="email"
-											value={editForm.email}
-											onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
-										/>
-										<input
-											type="password"
-											value={editForm.password}
-											onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
-											placeholder="New password (optional)"
-										/>
-									</td>
-									<td>
-										<button onClick={() => handleUpdate(actor.id)}>Save</button>
-										<button onClick={() => setEditing(null)}>Cancel</button>
-									</td>
-								</>
-							) : (
-								<>
-									<td>
-										{actor.lastName}, {actor.firstName}
-									</td>
-									<td>{actor.email}</td>
-									<td>
-										<button onClick={() => startEdit(actor)}>Edit</button>
-										<button onClick={() => handleDelete(actor.id)}>Delete</button>
-									</td>
-								</>
-							)}
+			<div className="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Email</th>
+							<th className="no-print"></th>
 						</tr>
-					))}
-				</tbody>
-			</table>
+					</thead>
+					<tbody>
+						{actors.map((actor) => (
+							<tr key={actor.id}>
+								{editing === actor.id ? (
+									<>
+										<td>
+											<div className="stack" style={{ gap: '0.5rem' }}>
+												<input
+													value={editForm.firstName}
+													onChange={(e) =>
+														setEditForm((p) => ({ ...p, firstName: e.target.value }))
+													}
+													placeholder="First name"
+												/>
+												<input
+													value={editForm.lastName}
+													onChange={(e) =>
+														setEditForm((p) => ({ ...p, lastName: e.target.value }))
+													}
+													placeholder="Last name"
+												/>
+											</div>
+										</td>
+										<td>
+											<div className="stack" style={{ gap: '0.5rem' }}>
+												<input
+													type="email"
+													value={editForm.email}
+													onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+												/>
+												<input
+													type="password"
+													value={editForm.password}
+													onChange={(e) =>
+														setEditForm((p) => ({ ...p, password: e.target.value }))
+													}
+													placeholder="New password (optional)"
+												/>
+											</div>
+										</td>
+										<td className="no-print">
+											<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+												<button className="btn btn--sm btn--primary" onClick={() => handleUpdate(actor.id)}>
+													Save
+												</button>
+												<button className="btn btn--sm btn--ghost" onClick={() => setEditing(null)}>
+													Cancel
+												</button>
+											</div>
+										</td>
+									</>
+								) : (
+									<>
+										<td>
+											{actor.lastName}, {actor.firstName}
+										</td>
+										<td>{actor.email}</td>
+										<td className="no-print">
+											<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+												<button className="btn btn--sm" onClick={() => startEdit(actor)}>
+													Edit
+												</button>
+												<button className="btn btn--sm btn--danger" onClick={() => handleDelete(actor.id)}>
+													Delete
+												</button>
+											</div>
+										</td>
+									</>
+								)}
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 }

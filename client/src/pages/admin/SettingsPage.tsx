@@ -106,183 +106,137 @@ export function SettingsPage() {
 		}
 	}
 
-	if (loading) return <div>Loading...</div>;
+	if (loading) return <div className="muted">Loading...</div>;
 
 	const orgName = user?.organization?.name ?? 'Organization';
 
 	return (
 		<div>
-			<h1>Settings</h1>
-			<p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-				Organization: {orgName}
-			</p>
-			<form onSubmit={handleSubmit} style={{ maxWidth: '28rem' }}>
-				<div style={{ marginBottom: '1.5rem' }}>
-					<label
-						htmlFor="showTitle"
-						style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}
-					>
-						Show title
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">Settings</h1>
+					<p className="page-subtitle">Organization: {orgName}</p>
+				</div>
+			</div>
+			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
+				<form onSubmit={handleSubmit} className="stack">
+					<label className="field" htmlFor="showTitle">
+						<span className="field-label">Show title</span>
+						<input
+							id="showTitle"
+							type="text"
+							value={showTitle}
+							onChange={(e) => setShowTitle(e.target.value)}
+							placeholder={orgName}
+							style={{ width: '100%' }}
+						/>
+						<p className="muted" style={{ fontSize: '0.9rem', margin: 0 }}>
+							Displayed in header, reports, and printouts. Falls back to org name if empty.
+						</p>
 					</label>
-					<input
-						id="showTitle"
-						type="text"
-						value={showTitle}
-						onChange={(e) => setShowTitle(e.target.value)}
-						placeholder={orgName}
-						style={{ width: '100%' }}
-					/>
-					<p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-						Displayed in header, reports, and printouts. Falls back to org name if empty.
-					</p>
-				</div>
 
-				<div style={{ marginBottom: '1.5rem' }}>
-					<label
-						htmlFor="showsPerWeek"
-						style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}
-					>
-						Number of shows per week
+					<label className="field" htmlFor="showsPerWeek">
+						<span className="field-label">Number of shows per week</span>
+						<input
+							id="showsPerWeek"
+							type="number"
+							min={1}
+							value={showsPerWeek}
+							onChange={(e) => {
+								const v = e.target.value;
+								setShowsPerWeek(v === '' ? '' : Math.max(1, parseInt(v, 10) || 1));
+							}}
+							style={{ width: '7rem' }}
+						/>
 					</label>
-					<input
-						id="showsPerWeek"
-						type="number"
-						min={1}
-						value={showsPerWeek}
-						onChange={(e) => {
-							const v = e.target.value;
-							setShowsPerWeek(v === '' ? '' : Math.max(1, parseInt(v, 10) || 1));
-						}}
-						style={{ width: '6rem' }}
-					/>
-				</div>
 
-				<div style={{ marginBottom: '1.5rem' }}>
-					<span
-						style={{
-							display: 'block',
-							marginBottom: '0.5rem',
-							fontWeight: 500,
-						}}
-					>
-						Dark days (days off)
-					</span>
-					<p
-						style={{
-							fontSize: '0.85rem',
-							color: 'var(--text-muted)',
-							marginBottom: '0.5rem',
-						}}
-					>
-						Select days with no performances.
-					</p>
-					<div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-						{DAY_INDICES.map((day, i) => (
-							<button
-								key={day}
-								type="button"
-								onClick={() => toggleDarkDay(day)}
-								aria-pressed={darkDays.includes(day)}
-								aria-label={`${DAY_LABELS[i]} ${darkDays.includes(day) ? 'selected' : 'not selected'}`}
-								style={{
-									width: '2.5rem',
-									height: '2.5rem',
-									padding: 0,
-									fontWeight: 600,
-									borderRadius: '6px',
-									border: '1px solid var(--border)',
-									background: darkDays.includes(day) ? 'var(--accent)' : 'var(--bg-elevated)',
-									color: darkDays.includes(day) ? 'var(--bg)' : 'var(--text)',
-									cursor: 'pointer',
-								}}
-							>
-								{DAY_LABELS[i]}
-							</button>
-						))}
+					<div className="field">
+						<span className="field-label">Dark days (days off)</span>
+						<p className="muted" style={{ fontSize: '0.9rem', margin: 0 }}>
+							Select days with no performances.
+						</p>
+						<div className="day-toggle-grid">
+							{DAY_INDICES.map((day, i) => (
+								<button
+									key={day}
+									type="button"
+									onClick={() => toggleDarkDay(day)}
+									aria-pressed={darkDays.includes(day)}
+									aria-label={`${DAY_LABELS[i]} ${darkDays.includes(day) ? 'selected' : 'not selected'}`}
+									className="day-toggle"
+								>
+									{DAY_LABELS[i]}
+								</button>
+							))}
+						</div>
 					</div>
-				</div>
 
-				{message && (
-					<div
-						style={{
-							marginBottom: '1rem',
-							color: message.type === 'error' ? 'var(--error)' : 'var(--success)',
-						}}
-					>
-						{message.text}
-					</div>
-				)}
+					{message && (
+						<div className={`alert ${message.type === 'error' ? 'alert--error' : 'alert--success'}`}>
+							{message.text}
+						</div>
+					)}
 
-				<button type="submit" disabled={saving}>
-					{saving ? 'Saving...' : 'Save settings'}
-				</button>
-			</form>
+					<button className="btn btn--primary" type="submit" disabled={saving}>
+						{saving ? 'Saving...' : 'Save settings'}
+					</button>
+				</form>
+			</div>
 
-			<hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+			<hr />
 
 			<h2 style={{ marginBottom: '0.5rem' }}>Import Performance Calendar</h2>
-			<p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+			<p className="muted" style={{ marginBottom: '1rem' }}>
 				Upload a CSV or Excel file with columns <code>date</code> (YYYY-MM-DD) and{' '}
 				<code>showTime</code>, or <code>time</code>. Accepts 24h (14:00), 12h (2:00 PM).
 			</p>
-			<form onSubmit={handleImportSubmit} style={{ maxWidth: '28rem', marginBottom: '1.5rem' }}>
-				<div style={{ marginBottom: '1rem' }}>
+			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
+				<form onSubmit={handleImportSubmit} className="stack">
 					<input
 						ref={importInputRef}
 						type="file"
 						accept=".csv,.xlsx,.xls"
 						onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
 					/>
-				</div>
-				<label
-					style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '0.5rem',
-						marginBottom: '1rem',
-					}}
-				>
-					<input
-						type="checkbox"
-						checked={skipDuplicates}
-						onChange={(e) => setSkipDuplicates(e.target.checked)}
-					/>
-					Skip duplicate shows (same date + time)
-				</label>
-				<button type="submit" disabled={!importFile || importLoading}>
-					{importLoading ? 'Importing...' : 'Import'}
-				</button>
-			</form>
-			{importError && (
-				<div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{importError}</div>
-			)}
-			{importResult && (
-				<div
-					style={{
-						padding: '1rem',
-						background: 'var(--bg-elevated)',
-						borderRadius: '6px',
-						maxWidth: '28rem',
-					}}
-				>
-					<p>
-						Created: <strong>{importResult.createdCount}</strong> | Skipped:{' '}
-						<strong>{importResult.skippedCount}</strong>
-					</p>
-					{importResult.createdShows && importResult.createdShows.length > 0 && (
-						<details>
-							<summary>Created shows</summary>
-							<ul style={{ marginTop: '0.5rem' }}>
-								{importResult.createdShows.map((s, i) => (
-									<li key={i}>
-										{s.date} — {formatShowTime(s.showTime)}
-									</li>
-								))}
-							</ul>
-						</details>
-					)}
-				</div>
-			)}
+					<label className="checkbox-row">
+						<input
+							type="checkbox"
+							checked={skipDuplicates}
+							onChange={(e) => setSkipDuplicates(e.target.checked)}
+						/>
+						Skip duplicate shows (same date + time)
+					</label>
+					<button className="btn btn--primary" type="submit" disabled={!importFile || importLoading}>
+						{importLoading ? 'Importing...' : 'Import'}
+					</button>
+				</form>
+
+				{importError && (
+					<div className="alert alert--error" style={{ marginTop: '1rem' }}>
+						{importError}
+					</div>
+				)}
+				{importResult && (
+					<div className="alert alert--success" style={{ marginTop: '1rem' }}>
+						<p style={{ margin: 0 }}>
+							Created: <strong>{importResult.createdCount}</strong> | Skipped:{' '}
+							<strong>{importResult.skippedCount}</strong>
+						</p>
+						{importResult.createdShows && importResult.createdShows.length > 0 && (
+							<details style={{ marginTop: '0.75rem' }}>
+								<summary>Created shows</summary>
+								<ul style={{ marginTop: '0.5rem' }}>
+									{importResult.createdShows.map((s, i) => (
+										<li key={i}>
+											{s.date} — {formatShowTime(s.showTime)}
+										</li>
+									))}
+								</ul>
+							</details>
+						)}
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

@@ -35,29 +35,15 @@ export function LoginPage() {
 	}
 
 	return (
-		<div
-			style={{
-				minHeight: '100vh',
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'center',
-				padding: '1rem',
-			}}
-		>
+		<div className="auth-shell">
 			<form
 				onSubmit={handleSubmit}
-				style={{
-					width: '100%',
-					maxWidth: '320px',
-					display: 'flex',
-					flexDirection: 'column',
-					gap: '1rem',
-				}}
+				className="card auth-card stack"
 			>
-				<h1 style={{ margin: 0, textAlign: 'center' }}>Callboard</h1>
-				<p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
-					Sign in to your account
-				</p>
+				<div>
+					<h1 className="auth-title">Callboard</h1>
+					<p className="auth-subtitle">Sign in to your account</p>
+				</div>
 				{error && <div style={{ color: 'var(--error)', fontSize: '0.9rem' }}>{error}</div>}
 				<input
 					type="email"
@@ -75,7 +61,7 @@ export function LoginPage() {
 					required
 					autoComplete="current-password"
 				/>
-				<button type="submit" disabled={loading}>
+				<button className="btn btn--primary" type="submit" disabled={loading}>
 					{loading ? 'Signing in...' : 'Sign in'}
 				</button>
 			</form>

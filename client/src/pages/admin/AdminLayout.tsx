@@ -11,85 +11,64 @@ export function AdminLayout() {
 	}
 
 	return (
-		<div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+		<div className="app-shell">
 			<header
-				className="no-print"
-				style={{
-					padding: '0.75rem 1.5rem',
-					borderBottom: '1px solid var(--border)',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'space-between',
-					flexWrap: 'wrap',
-					gap: '1rem',
-				}}
+				className="no-print app-header"
 			>
-				<nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-					<NavLink
-						to="/admin"
-						end
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Callboard
-					</NavLink>
-					<NavLink
-						to="/admin/actors"
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Actors
-					</NavLink>
-					<NavLink
-						to="/admin/shows"
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Shows
-					</NavLink>
-					<NavLink
-						to="/admin/qr"
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Current QR
-					</NavLink>
-					<NavLink
-						to="/admin/offline"
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Offline
-					</NavLink>
-					<NavLink
-						to="/admin/settings"
-						style={({ isActive }) => ({
-							fontWeight: isActive ? 600 : 400,
-							color: isActive ? 'var(--accent)' : 'var(--text)',
-						})}
-					>
-						Settings
-					</NavLink>
-				</nav>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-					<span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-						{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
-					</span>
-					<button onClick={handleLogout}>Log out</button>
+				<div className="container app-header__inner">
+					<nav className="app-nav" aria-label="Admin">
+						<NavLink
+							to="/admin"
+							end
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							Callboard
+						</NavLink>
+						<NavLink
+							to="/admin/actors"
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							Actors
+						</NavLink>
+						<NavLink
+							to="/admin/shows"
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							Shows
+						</NavLink>
+						<NavLink
+							to="/admin/qr"
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							Current QR
+						</NavLink>
+						<NavLink
+							to="/admin/offline"
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							Offline
+						</NavLink>
+						<NavLink
+							to="/admin/settings"
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							Settings
+						</NavLink>
+					</nav>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+						<span className="badge">
+							{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
+						</span>
+						<button className="btn btn--sm btn--ghost" onClick={handleLogout}>
+							Log out
+						</button>
+					</div>
 				</div>
 			</header>
-			<main style={{ flex: 1, padding: '1.5rem' }}>
-				<Outlet />
+			<main className="app-main">
+				<div className="container">
+					<Outlet />
+				</div>
 			</main>
 		</div>
 	);

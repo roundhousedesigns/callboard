@@ -144,61 +144,54 @@ export function OfflinePrintSheetPage() {
 		window.print();
 	}
 
-	if (loading) return <div>Loading...</div>;
+	if (loading) return <div className="muted">Loading...</div>;
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Offline Attendance Sheet';
 
 	return (
 		<div>
-			<h1>{displayTitle}</h1>
-			<p style={{ color: 'var(--text-muted)', marginTop: '-0.5rem' }}>Offline Attendance Sheet</p>
-			<p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+			<div className="page-header">
+				<div>
+					<h1 className="page-title">{displayTitle}</h1>
+					<p className="page-subtitle">Offline Attendance Sheet</p>
+				</div>
+			</div>
+			<p className="muted">
 				{online
 					? 'You are online. Data is synced. Use this page to print a sheet before going offline.'
 					: 'You are offline. This sheet uses cached data. Mark sign-ins on paper, then use Manual Entry when back online.'}
 			</p>
-			<div
-				className="no-print"
-				style={{
-					display: 'flex',
-					gap: '1rem',
-					marginBottom: '1rem',
-					flexWrap: 'wrap',
-				}}
-			>
-				<label>
-					Start:{' '}
-					<input
-						type="date"
-						value={dateRange.start}
-						onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
-					/>
-				</label>
-				<label>
-					End:{' '}
-					<input
-						type="date"
-						value={dateRange.end}
-						onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
-					/>
-				</label>
-				<button onClick={handlePrint}>Print sheet</button>
-				{online && (
-					<a href="/admin/manual-entry" style={{ alignSelf: 'center' }}>
-						Enter manual sign-ins
-					</a>
-				)}
+			<div className="no-print" style={{ margin: '1rem 0' }}>
+				<div className="toolbar">
+					<label className="field">
+						<span className="field-label">Start</span>
+						<input
+							type="date"
+							value={dateRange.start}
+							onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
+						/>
+					</label>
+					<label className="field">
+						<span className="field-label">End</span>
+						<input
+							type="date"
+							value={dateRange.end}
+							onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
+						/>
+					</label>
+					<button className="btn btn--sm btn--primary" onClick={handlePrint}>
+						Print sheet
+					</button>
+					{online && (
+						<a className="btn btn--sm btn--ghost" href="/admin/manual-entry">
+							Enter manual sign-ins
+						</a>
+					)}
+				</div>
 			</div>
-			<div
-				style={{
-					padding: '1rem',
-					background: 'var(--bg-elevated)',
-					borderRadius: '6px',
-					marginBottom: '1rem',
-				}}
-			>
-				<p style={{ margin: 0, fontSize: '0.9rem' }}>
+			<div className="card card--flat" style={{ marginBottom: '1rem' }}>
+				<p style={{ margin: 0, fontSize: '0.95rem' }}>
 					<strong>Instructions when offline:</strong> Print this sheet. As actors arrive, mark their
 					sign-in on the printed sheet. When internet is restored, go to Manual Entry to submit the
 					sign-ins.
