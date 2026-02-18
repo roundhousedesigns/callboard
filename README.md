@@ -21,6 +21,7 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
 ## Development
 
 1. Start the database:
+
    ```bash
    yarn db:start
    ```
@@ -28,28 +29,33 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
 2. Copy `.env.example` to `.env`.
 
 3. Set up the database:
+
    ```bash
    yarn db:push
    yarn db:seed
    ```
 
 4. Run the app:
+
    ```bash
    yarn dev
    ```
 
-5. Open http://localhost:5173 — Admin: `admin@demo.theatre` / Actor: `alice.anderson@demo.theatre` (password: `password123`)
+5. Open <http://localhost:5173>
+   Demo credentials (password: `password123`):
+   - Admin: `admin@demo.theatre`
+   - Actor: `alice.anderson@demo.theatre`
 
 ### Scripts
 
-| Script          | Description                   |
-|-----------------|-------------------------------|
-| `yarn dev`      | Run client + server           |
-| `yarn db:start` | Start PostgreSQL (Docker)     |
-| `yarn db:stop`  | Stop PostgreSQL               |
-| `yarn db:push`  | Apply schema                  |
-| `yarn db:seed`  | Seed demo data (3 weeks)      |
-| `yarn db:studio`| Prisma Studio                 |
+| Script           | Description               |
+| ---------------- | ------------------------- |
+| `yarn dev`       | Run client + server       |
+| `yarn db:start`  | Start PostgreSQL (Docker) |
+| `yarn db:stop`   | Stop PostgreSQL           |
+| `yarn db:push`   | Apply schema              |
+| `yarn db:seed`   | Seed demo data (3 weeks)  |
+| `yarn db:studio` | Prisma Studio             |
 
 ## Production
 

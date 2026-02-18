@@ -33,6 +33,7 @@ a {
 	color: var(--accent);
 	text-decoration: none;
 }
+
 a:hover {
 	color: var(--accent-hover);
 	text-decoration: underline;
@@ -47,15 +48,18 @@ button {
 	padding: 0.5rem 1rem;
 	border-radius: 6px;
 }
+
+button + button {
+	margin-left: 0.5rem;
+}
+
 button:hover {
 	background: #21262d;
 }
+
 button:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
-}
-button + button {
-	margin-left: 0.5rem;
 }
 
 input,
@@ -72,12 +76,14 @@ table {
 	border-collapse: collapse;
 	width: 100%;
 }
+
 th,
 td {
 	padding: 0.5rem 0.75rem;
 	text-align: left;
 	border-bottom: 1px solid var(--border);
 }
+
 th {
 	font-weight: 600;
 	color: var(--text-muted);
@@ -88,6 +94,7 @@ th {
 		background: white;
 		color: #111;
 	}
+
 	.no-print {
 		display: none !important;
 	}
