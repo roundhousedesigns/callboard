@@ -10,6 +10,7 @@ import { showRoutes } from "./routes/shows.js";
 import { attendanceRoutes } from "./routes/attendance.js";
 import { signInRoutes } from "./routes/signIn.js";
 import { organizationRoutes } from "./routes/organizations.js";
+import { actorRoutes } from "./routes/actor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/shows", showRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/sign-in", signInRoutes);
 app.use("/api/organizations", organizationRoutes);
+app.use("/api/actor", actorRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

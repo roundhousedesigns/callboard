@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
+import { ActiveShowCallboard } from '../../components/ActiveShowCallboard';
 
 interface SignInResult {
 	success: boolean;
@@ -78,11 +79,14 @@ export function SignInLandingPage() {
 
 	return (
 		<div className="auth-shell">
-			<div className="card auth-card stack" style={{ textAlign: 'center' }}>
-				<h2 style={{ color: 'var(--success)', margin: 0 }}>You're signed in</h2>
-				<p className="muted" style={{ margin: 0 }}>
-					{`Successfully signed in for ${showLabel}.`}
-				</p>
+			<div className="stack" style={{ width: 'min(70rem, 100%)', margin: '0 auto' }}>
+				<div className="card auth-card stack" style={{ textAlign: 'center' }}>
+					<h2 style={{ color: 'var(--success)', margin: 0 }}>You're signed in</h2>
+					<p className="muted" style={{ margin: 0 }}>
+						{`Successfully signed in for ${showLabel}.`}
+					</p>
+				</div>
+				<ActiveShowCallboard heading="Current callboard" />
 			</div>
 		</div>
 	);

@@ -11,7 +11,7 @@ import { ManualEntryPage } from './pages/admin/ManualEntryPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
 import { PastShowSheetPage } from './pages/admin/PastShowSheetPage';
 import { SignInLandingPage } from './pages/actor/SignInLandingPage';
-import { ActorHomePage } from './pages/actor/ActorHomePage';
+import { ActorCallboardPage } from './pages/actor/ActorCallboardPage';
 
 function ProtectedAdmin({ children }: { children: React.ReactNode }) {
 	const { user, loading } = useAuth();
@@ -63,7 +63,7 @@ export default function App() {
 				path="/actor"
 				element={
 					<ProtectedActor>
-						<ActorHomePage />
+						<ActorCallboardPage />
 					</ProtectedActor>
 				}
 			/>

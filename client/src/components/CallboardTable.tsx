@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import type { User } from '../lib/auth';
 import { formatShowTime } from '../lib/dateUtils';
 import { StatusIcon, statusLabels } from './StatusIcon';
+
+export interface Actor {
+	id: string;
+	firstName: string;
+	lastName: string;
+}
 
 export interface Show {
 	id: string;
@@ -11,7 +16,7 @@ export interface Show {
 	showTime: string;
 	activeAt: string | null;
 	lockedAt: string | null;
-	signInToken: string | null;
+	signInToken?: string | null;
 }
 
 export interface AttendanceRecord {
@@ -21,7 +26,7 @@ export interface AttendanceRecord {
 }
 
 interface CallboardTableProps {
-	actors: User[];
+	actors: Actor[];
 	shows: Show[];
 	attendance: AttendanceRecord[];
 	onSetStatus?: (userId: string, showId: string, status: AttendanceRecord['status'] | null) => void;
@@ -296,7 +301,7 @@ export function CallboardTable({
 									<br />
 									<span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
 										{timeLabel}
-										{isActiveShow && (
+										{isActiveShow && !readOnly && (
 											<Link
 												to="/admin/qr"
 												title="Open QR code"
