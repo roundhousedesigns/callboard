@@ -24,6 +24,9 @@ export default defineConfig({
                     },
                 ],
             },
+            server: {
+                allowedHosts: ['callboard.roundhouse-designs.com'],
+            },
         }),
     ],
     resolve: {
