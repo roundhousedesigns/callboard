@@ -228,9 +228,15 @@ function QRCodeIcon() {
 	);
 }
 
+function getLocalDateFromDateOnlyString(dateStr: string): Date {
+	const yyyyMmDd = dateStr.slice(0, 10);
+	const [y, m, d] = yyyyMmDd.split('-').map(Number);
+	return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
 function getShowDateTime(show: Show): number {
 	const [h, m] = show.showTime.split(':').map(Number);
-	const d = new Date(show.date);
+	const d = getLocalDateFromDateOnlyString(show.date);
 	d.setHours(h, m, 0, 0);
 	return d.getTime();
 }
@@ -270,7 +276,7 @@ export function CallboardTable({
 					<tr>
 						<th style={{ minWidth: '140px' }}>Actor</th>
 						{shows.map((s) => {
-							const d = new Date(s.date);
+							const d = getLocalDateFromDateOnlyString(s.date);
 							const dayLabel = d.toLocaleDateString(undefined, { weekday: 'long' });
 							const dateLabel = d.toLocaleDateString(undefined, {
 								month: 'numeric',

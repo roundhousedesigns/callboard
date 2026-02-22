@@ -3,9 +3,6 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatShowTime } from '../../lib/dateUtils';
 
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Mon–Sun
-const DAY_INDICES = [0, 1, 2, 3, 4, 5, 6];
-
 interface ImportResult {
 	createdCount: number;
 	skippedCount: number;
@@ -26,14 +23,12 @@ const WEEKDAY_OPTIONS: Array<{ value: number; label: string }> = [
 interface OrgSettings {
 	showTitle: string | null;
 	weekStartsOn: number | null;
-	darkDays: number[];
 }
 
 export function SettingsPage() {
 	const { user, refresh } = useAuth();
 	const [showTitle, setShowTitle] = useState('');
 	const [weekStartsOn, setWeekStartsOn] = useState<number>(0);
-	const [darkDays, setDarkDays] = useState<number[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -50,7 +45,6 @@ export function SettingsPage() {
 				const settings = await api.get<OrgSettings>('/organizations/me/settings');
 				setShowTitle(settings.showTitle ?? '');
 				setWeekStartsOn(settings.weekStartsOn ?? 0);
-				setDarkDays(settings.darkDays ?? []);
 			} catch (err) {
 				setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to load' });
 			} finally {
@@ -60,12 +54,6 @@ export function SettingsPage() {
 		load();
 	}, []);
 
-	function toggleDarkDay(day: number) {
-		setDarkDays((prev) =>
-			prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort((a, b) => a - b),
-		);
-	}
-
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setMessage(null);
@@ -74,7 +62,6 @@ export function SettingsPage() {
 			await api.patch('/organizations/me/settings', {
 				showTitle: showTitle.trim() || null,
 				weekStartsOn,
-				darkDays,
 			});
 			await refresh();
 			setMessage({ type: 'success', text: 'Settings saved.' });
@@ -163,27 +150,6 @@ export function SettingsPage() {
 							Callboard weekly view shows shows starting from this day.
 						</p>
 					</label>
-
-					<div className="field">
-						<span className="field-label">Dark days (days off)</span>
-						<p className="muted" style={{ fontSize: '0.9rem', margin: 0 }}>
-							Select days with no performances.
-						</p>
-						<div className="day-toggle-grid">
-							{DAY_INDICES.map((day, i) => (
-								<button
-									key={day}
-									type="button"
-									onClick={() => toggleDarkDay(day)}
-									aria-pressed={darkDays.includes(day)}
-									aria-label={`${DAY_LABELS[i]} ${darkDays.includes(day) ? 'selected' : 'not selected'}`}
-									className="day-toggle"
-								>
-									{DAY_LABELS[i]}
-								</button>
-							))}
-						</div>
-					</div>
 
 					{message && (
 						<div className={`alert ${message.type === 'error' ? 'alert--error' : 'alert--success'}`}>

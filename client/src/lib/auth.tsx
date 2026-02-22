@@ -13,7 +13,6 @@ export interface User {
 		slug: string;
 		showTitle?: string | null;
 		weekStartsOn?: number | null;
-		darkDays?: number[];
 	};
 }
 

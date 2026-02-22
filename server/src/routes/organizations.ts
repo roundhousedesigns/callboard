@@ -43,14 +43,13 @@ router.get("/", async (_req, res) => {
 const settingsSchema = z.object({
   showTitle: z.string().nullable().optional(),
   weekStartsOn: z.number().int().min(0).max(6).optional(),
-  darkDays: z.array(z.number().int().min(0).max(6)).optional(),
 });
 
 router.get("/me/settings", authMiddleware, adminOnly, async (req, res) => {
   const orgId = req.user!.organizationId;
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
-    select: { showTitle: true, weekStartsOn: true, darkDays: true },
+    select: { showTitle: true, weekStartsOn: true },
   });
   if (!org) {
     res.status(404).json({ error: "Organization not found" });
@@ -68,9 +67,8 @@ router.patch("/me/settings", authMiddleware, adminOnly, async (req, res) => {
       data: {
         ...(data.showTitle !== undefined && { showTitle: data.showTitle || null }),
         ...(data.weekStartsOn !== undefined && { weekStartsOn: data.weekStartsOn ?? null }),
-        ...(data.darkDays !== undefined && { darkDays: data.darkDays }),
       },
-      select: { showTitle: true, weekStartsOn: true, darkDays: true },
+      select: { showTitle: true, weekStartsOn: true },
     });
     res.json(org);
   } catch (err) {

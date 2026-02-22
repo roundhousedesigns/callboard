@@ -16,7 +16,7 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
 - **Calendar Import** — CSV or Excel with date and show time
 - **Callboard & Print** — View and print attendance sheets
 - **Offline Mode** — Print sheet when offline; enter sign-ins when back online (Dexie/IndexedDB)
-- **Settings** — Show title, shows per week, dark days (MTWTFSS)
+- **Settings** — Show title
 
 ## Development
 

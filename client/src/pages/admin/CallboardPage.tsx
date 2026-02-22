@@ -7,24 +7,19 @@ import { api } from '../../lib/api';
 import {
 	toLocalDateStr,
 	getWeekBoundsWithStart,
-	getTodayStart,
 } from '../../lib/dateUtils';
 
 /**
- * Week range for callboard: first show must be on or after the week-start day of the
- * current week, and no past shows. So we use the later of (week-start date, today).
+ * Week range for callboard: the full week containing "today", where "week" starts on
+ * the organization-configured start day.
  */
 function getThisWeekRange(weekStartsOn: number) {
 	const now = new Date();
 	const { start: weekStart } = getWeekBoundsWithStart(now, weekStartsOn);
-	const todayStart = getTodayStart();
-	// Don't show past shows: start from the later of week-start or today
-	const effectiveStart =
-		weekStart.getTime() >= todayStart.getTime() ? weekStart : todayStart;
-	const end = new Date(effectiveStart);
-	end.setDate(end.getDate() + 13);
+	const end = new Date(weekStart);
+	end.setDate(end.getDate() + 6);
 	return {
-		start: toLocalDateStr(effectiveStart),
+		start: toLocalDateStr(weekStart),
 		end: toLocalDateStr(end),
 	};
 }
@@ -57,12 +52,12 @@ export function CallboardPage() {
 				),
 			]);
 			setActors(usersRes.filter((u) => u.role === 'actor'));
-			// Only include shows on or after the range start (week-start or today, whichever is later) and no past shows
+			// Only include shows on or after the range start (week start by default)
 			const rangeStartStr = dateRange.start;
-			const todayStr = toLocalDateStr(getTodayStart());
+			const rangeEndStr = dateRange.end;
 			const showsInRange = showsRes.filter((s) => {
 				const showDateStr = s.date.slice(0, 10);
-				return showDateStr >= rangeStartStr && showDateStr >= todayStr;
+				return showDateStr >= rangeStartStr && showDateStr <= rangeEndStr;
 			});
 			setShows(showsInRange.slice(0, showsPerWeek));
 
@@ -172,7 +167,9 @@ export function CallboardPage() {
 					<button
 						className="btn btn--sm btn--ghost"
 						type="button"
-						onClick={() => loadData(false)}
+						onClick={() => {
+							void loadData(false);
+						}}
 						disabled={refreshing || loading}
 					>
 						{refreshing ? 'Refreshing...' : 'Refresh'}
@@ -186,7 +183,9 @@ export function CallboardPage() {
 				actors={actors}
 				shows={shows}
 				attendance={attendance}
-				onSetStatus={handleSetStatus}
+				onSetStatus={(userId, showId, status) => {
+					void handleSetStatus(userId, showId, status);
+				}}
 				highlightNextUpcoming
 			/>
 		</div>

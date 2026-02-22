@@ -12,7 +12,6 @@ model Organization {
   slug         String  @unique
   showTitle    String?
   weekStartsOn Int?   // 0=Sunday, 1=Monday, ... 6=Saturday
-  darkDays     Int[]   @default([])
 
   users User[]
   shows Show[]

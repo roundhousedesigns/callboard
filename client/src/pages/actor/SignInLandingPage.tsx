@@ -6,7 +6,6 @@ import { formatShowTime } from '../../lib/dateUtils';
 
 interface SignInResult {
 	success: boolean;
-	alreadySignedIn?: boolean;
 	show?: { date: string; showTime: string };
 }
 
@@ -82,9 +81,7 @@ export function SignInLandingPage() {
 			<div className="card auth-card stack" style={{ textAlign: 'center' }}>
 				<h2 style={{ color: 'var(--success)', margin: 0 }}>You're signed in</h2>
 				<p className="muted" style={{ margin: 0 }}>
-					{result?.alreadySignedIn
-						? `You had already signed in for ${showLabel}.`
-						: `Successfully signed in for ${showLabel}.`}
+					{`Successfully signed in for ${showLabel}.`}
 				</p>
 			</div>
 		</div>
