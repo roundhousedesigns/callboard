@@ -51,11 +51,10 @@ export function SettingsPage() {
 				setLoading(false);
 			}
 		}
-		load();
+		void load();
 	}, []);
 
-	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
+	async function submitSettings() {
 		setMessage(null);
 		setSaving(true);
 		try {
@@ -75,8 +74,12 @@ export function SettingsPage() {
 		}
 	}
 
-	async function handleImportSubmit(e: React.FormEvent) {
+	function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
+		void submitSettings();
+	}
+
+	async function importCalendar() {
 		if (!importFile) return;
 		setImportError(null);
 		setImportResult(null);
@@ -101,6 +104,11 @@ export function SettingsPage() {
 		} finally {
 			setImportLoading(false);
 		}
+	}
+
+	function handleImportSubmit(e: React.FormEvent) {
+		e.preventDefault();
+		void importCalendar();
 	}
 
 	if (loading) return <div className="muted">Loading...</div>;

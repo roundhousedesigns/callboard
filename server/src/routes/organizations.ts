@@ -1,16 +1,22 @@
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type RequestHandler, type Response } from "express";
 import { z } from "zod";
 import { authMiddleware, adminOnly } from "../middleware/auth.js";
 import { prisma } from "../db.js";
 
 const router = Router();
 
+const asyncHandler =
+  (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>): RequestHandler =>
+  (req, res, next) => {
+    void Promise.resolve(fn(req, res, next)).catch(next);
+  };
+
 const createSchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
 });
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   try {
     const data = createSchema.parse(req.body);
     const existing = await prisma.organization.findUnique({
@@ -31,21 +37,21 @@ router.post("/", async (req, res) => {
     }
     throw err;
   }
-});
+}));
 
-router.get("/", async (_req, res) => {
+router.get("/", asyncHandler(async (_req, res) => {
   const orgs = await prisma.organization.findMany({
     select: { id: true, name: true, slug: true },
   });
   res.json(orgs);
-});
+}));
 
 const settingsSchema = z.object({
   showTitle: z.string().nullable().optional(),
   weekStartsOn: z.number().int().min(0).max(6).optional(),
 });
 
-router.get("/me/settings", authMiddleware, adminOnly, async (req, res) => {
+router.get("/me/settings", authMiddleware, adminOnly, asyncHandler(async (req, res) => {
   const orgId = req.user!.organizationId;
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
@@ -56,9 +62,9 @@ router.get("/me/settings", authMiddleware, adminOnly, async (req, res) => {
     return;
   }
   res.json(org);
-});
+}));
 
-router.patch("/me/settings", authMiddleware, adminOnly, async (req, res) => {
+router.patch("/me/settings", authMiddleware, adminOnly, asyncHandler(async (req, res) => {
   try {
     const data = settingsSchema.parse(req.body);
     const orgId = req.user!.organizationId;
@@ -78,6 +84,6 @@ router.patch("/me/settings", authMiddleware, adminOnly, async (req, res) => {
     }
     throw err;
   }
-});
+}));
 
 export { router as organizationRoutes };

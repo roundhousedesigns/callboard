@@ -1,10 +1,16 @@
-import { Router } from "express";
+import { Router, type NextFunction, type Request, type RequestHandler, type Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { prisma } from "../db.js";
 
 const router = Router();
+
+const asyncHandler =
+  (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>): RequestHandler =>
+  (req, res, next) => {
+    void Promise.resolve(fn(req, res, next)).catch(next);
+  };
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -39,7 +45,7 @@ function createTokens(user: { id: string; email: string; role: string; organizat
   return { accessToken, refreshToken };
 }
 
-router.post("/register", async (req, res) => {
+router.post("/register", asyncHandler(async (req, res) => {
   try {
     const data = registerSchema.parse(req.body);
 
@@ -116,9 +122,9 @@ router.post("/register", async (req, res) => {
     }
     throw err;
   }
-});
+}));
 
-router.post("/login", async (req, res) => {
+router.post("/login", asyncHandler(async (req, res) => {
   try {
     const data = loginSchema.parse(req.body);
 
@@ -167,9 +173,9 @@ router.post("/login", async (req, res) => {
     }
     throw err;
   }
-});
+}));
 
-router.post("/refresh", async (req, res) => {
+router.post("/refresh", asyncHandler(async (req, res) => {
   const refreshToken = req.cookies?.refreshToken;
   if (!refreshToken) {
     res.status(401).json({ error: "No refresh token" });
@@ -207,7 +213,7 @@ router.post("/refresh", async (req, res) => {
   } catch {
     res.status(401).json({ error: "Invalid refresh token" });
   }
-});
+}));
 
 router.post("/logout", (_req, res) => {
   res
@@ -216,7 +222,7 @@ router.post("/logout", (_req, res) => {
     .json({ ok: true });
 });
 
-router.get("/me", async (req, res) => {
+router.get("/me", asyncHandler(async (req, res) => {
   const token =
     req.cookies?.accessToken ??
     req.headers.authorization?.replace("Bearer ", "");
@@ -267,6 +273,6 @@ router.get("/me", async (req, res) => {
   } catch {
     res.status(401).json({ error: "Invalid token" });
   }
-});
+}));
 
 export { router as authRoutes };
