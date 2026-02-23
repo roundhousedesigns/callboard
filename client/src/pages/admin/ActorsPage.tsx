@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react';
+import {
+	Button,
+	Callout,
+	Card,
+	FormGroup,
+	HTMLTable,
+	InputGroup,
+	Spinner,
+} from '@blueprintjs/core';
 import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
 
@@ -6,6 +15,7 @@ export function ActorsPage() {
 	const [actors, setActors] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [editing, setEditing] = useState<string | null>(null);
+	const [message, setMessage] = useState<{ type: 'danger' | 'success'; text: string } | null>(null);
 	const [editForm, setEditForm] = useState({
 		email: '',
 		firstName: '',
@@ -29,6 +39,7 @@ export function ActorsPage() {
 
 	async function handleCreate(e: React.FormEvent) {
 		e.preventDefault();
+		setMessage(null);
 		try {
 			const user = await api.post<User>('/users', {
 				...form,
@@ -36,8 +47,9 @@ export function ActorsPage() {
 			});
 			setActors((prev) => [...prev, user].sort((a, b) => a.lastName.localeCompare(b.lastName)));
 			setForm({ email: '', password: '', firstName: '', lastName: '' });
+			setMessage({ type: 'success', text: 'Actor added.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed');
+			setMessage({ type: 'danger', text: err instanceof Error ? err.message : 'Failed to add actor.' });
 		}
 	}
 
@@ -52,6 +64,7 @@ export function ActorsPage() {
 	}
 
 	async function handleUpdate(id: string) {
+		setMessage(null);
 		try {
 			const payload: Record<string, string> = {
 				email: editForm.email,
@@ -66,22 +79,37 @@ export function ActorsPage() {
 					.sort((a, b) => a.lastName.localeCompare(b.lastName)),
 			);
 			setEditing(null);
+			setMessage({ type: 'success', text: 'Actor updated.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed');
+			setMessage({
+				type: 'danger',
+				text: err instanceof Error ? err.message : 'Failed to update actor.',
+			});
 		}
 	}
 
 	async function handleDelete(id: string) {
 		if (!confirm('Delete this actor?')) return;
+		setMessage(null);
 		try {
 			await api.delete(`/users/${id}`);
 			setActors((prev) => prev.filter((a) => a.id !== id));
+			setMessage({ type: 'success', text: 'Actor deleted.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed');
+			setMessage({
+				type: 'danger',
+				text: err instanceof Error ? err.message : 'Failed to delete actor.',
+			});
 		}
 	}
 
-	if (loading) return <div className="muted">Loading...</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
 
 	return (
 		<div>
@@ -91,55 +119,50 @@ export function ActorsPage() {
 					<p className="page-subtitle">Add and manage actor accounts.</p>
 				</div>
 			</div>
-			<form
-				onSubmit={handleCreate}
-				className="toolbar no-print"
-				style={{ marginBottom: '1rem' }}
-			>
-				<label className="field">
-					<span className="field-label">First name</span>
-					<input
-						placeholder="First name"
-						value={form.firstName}
-						onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field">
-					<span className="field-label">Last name</span>
-					<input
-						placeholder="Last name"
-						value={form.lastName}
-						onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field" style={{ minWidth: '16rem' }}>
-					<span className="field-label">Email</span>
-					<input
-						type="email"
-						placeholder="Email"
-						value={form.email}
-						onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field">
-					<span className="field-label">Password</span>
-					<input
-						type="password"
-						placeholder="Password"
-						value={form.password}
-						onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-						required
-					/>
-				</label>
-				<button className="btn btn--sm btn--primary" type="submit">
-					Add actor
-				</button>
-			</form>
-			<div className="table-wrap">
-				<table>
+			{message && <Callout intent={message.type}>{message.text}</Callout>}
+			<Card className="no-print toolbar-card">
+				<form onSubmit={handleCreate} className="toolbar-grid">
+					<FormGroup label="First name" className="toolbar-field">
+						<InputGroup
+							placeholder="First name"
+							value={form.firstName}
+							onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+							required
+						/>
+					</FormGroup>
+					<FormGroup label="Last name" className="toolbar-field">
+						<InputGroup
+							placeholder="Last name"
+							value={form.lastName}
+							onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+							required
+						/>
+					</FormGroup>
+					<FormGroup label="Email" className="toolbar-field toolbar-field-wide">
+						<InputGroup
+							type="email"
+							placeholder="Email"
+							value={form.email}
+							onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+							required
+						/>
+					</FormGroup>
+					<FormGroup label="Password" className="toolbar-field">
+						<InputGroup
+							type="password"
+							placeholder="Password"
+							value={form.password}
+							onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+							required
+						/>
+					</FormGroup>
+					<div className="toolbar-actions">
+						<Button small intent="primary" type="submit" text="Add actor" />
+					</div>
+				</form>
+			</Card>
+			<Card className="table-card">
+				<HTMLTable bordered striped interactive condensed className="admin-table">
 					<thead>
 						<tr>
 							<th>Name</th>
@@ -153,15 +176,15 @@ export function ActorsPage() {
 								{editing === actor.id ? (
 									<>
 										<td>
-											<div className="stack" style={{ gap: '0.5rem' }}>
-												<input
+											<div className="form-stack-tight">
+												<InputGroup
 													value={editForm.firstName}
 													onChange={(e) =>
 														setEditForm((p) => ({ ...p, firstName: e.target.value }))
 													}
 													placeholder="First name"
 												/>
-												<input
+												<InputGroup
 													value={editForm.lastName}
 													onChange={(e) =>
 														setEditForm((p) => ({ ...p, lastName: e.target.value }))
@@ -171,13 +194,13 @@ export function ActorsPage() {
 											</div>
 										</td>
 										<td>
-											<div className="stack" style={{ gap: '0.5rem' }}>
-												<input
+											<div className="form-stack-tight">
+												<InputGroup
 													type="email"
 													value={editForm.email}
 													onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
 												/>
-												<input
+												<InputGroup
 													type="password"
 													value={editForm.password}
 													onChange={(e) =>
@@ -188,13 +211,16 @@ export function ActorsPage() {
 											</div>
 										</td>
 										<td className="no-print">
-											<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-												<button className="btn btn--sm btn--primary" onClick={() => handleUpdate(actor.id)}>
-													Save
-												</button>
-												<button className="btn btn--sm btn--ghost" onClick={() => setEditing(null)}>
-													Cancel
-												</button>
+											<div className="inline-actions align-right">
+												<Button
+													small
+													intent="primary"
+													text="Save"
+													onClick={() => {
+														void handleUpdate(actor.id);
+													}}
+												/>
+												<Button small text="Cancel" onClick={() => setEditing(null)} />
 											</div>
 										</td>
 									</>
@@ -205,13 +231,16 @@ export function ActorsPage() {
 										</td>
 										<td>{actor.email}</td>
 										<td className="no-print">
-											<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-												<button className="btn btn--sm" onClick={() => startEdit(actor)}>
-													Edit
-												</button>
-												<button className="btn btn--sm btn--danger" onClick={() => handleDelete(actor.id)}>
-													Delete
-												</button>
+											<div className="inline-actions align-right">
+												<Button small text="Edit" onClick={() => startEdit(actor)} />
+												<Button
+													small
+													intent="danger"
+													text="Delete"
+													onClick={() => {
+														void handleDelete(actor.id);
+													}}
+												/>
 											</div>
 										</td>
 									</>
@@ -219,8 +248,8 @@ export function ActorsPage() {
 							</tr>
 						))}
 					</tbody>
-				</table>
-			</div>
+				</HTMLTable>
+			</Card>
 		</div>
 	);
 }

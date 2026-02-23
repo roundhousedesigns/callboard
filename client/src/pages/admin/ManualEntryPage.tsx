@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react';
+import {
+	Button,
+	Callout,
+	Card,
+	Checkbox,
+	FormGroup,
+	HTMLSelect,
+	Spinner,
+} from '@blueprintjs/core';
 import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
@@ -16,7 +25,7 @@ export function ManualEntryPage() {
 	const [selectedActors, setSelectedActors] = useState<Set<string>>(new Set());
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
-	const [message, setMessage] = useState<string | null>(null);
+	const [message, setMessage] = useState<{ type: 'success' | 'danger'; text: string } | null>(null);
 
 	useEffect(() => {
 		Promise.all([api.get<Show[]>('/shows'), api.get<User[]>('/users')])
@@ -49,16 +58,28 @@ export function ManualEntryPage() {
 				showId: selectedShow,
 				userIds: Array.from(selectedActors),
 			});
-			setMessage(`Successfully recorded ${selectedActors.size} sign-in(s).`);
+			setMessage({
+				type: 'success',
+				text: `Successfully recorded ${selectedActors.size} sign-in(s).`,
+			});
 			setSelectedActors(new Set());
 		} catch (err) {
-			setMessage(err instanceof Error ? err.message : 'Failed');
+			setMessage({
+				type: 'danger',
+				text: err instanceof Error ? err.message : 'Failed to submit sign-ins.',
+			});
 		} finally {
 			setSubmitting(false);
 		}
 	}
 
-	if (loading) return <div className="muted">Loading...</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
 
 	return (
 		<div>
@@ -70,42 +91,45 @@ export function ManualEntryPage() {
 					</p>
 				</div>
 			</div>
-			<form onSubmit={handleSubmit} className="card card--flat stack" style={{ maxWidth: '34rem' }}>
-				<label className="field">
-					<span className="field-label">Show</span>
-					<select value={selectedShow} onChange={(e) => setSelectedShow(e.target.value)} required>
-						<option value="">Select a show</option>
-						{shows.map((s) => (
-							<option key={s.id} value={s.id}>
-								{new Date(s.date).toLocaleDateString()} — {formatShowTime(s.showTime)}
-							</option>
-						))}
-					</select>
-				</label>
-				<div className="field">
-					<span className="field-label">Actors who signed in</span>
-					<div className="scrollbox">
-						{actors.map((actor) => (
-							<label key={actor.id} className="checkbox-row" style={{ padding: '0.25rem 0' }}>
-								<input
-									type="checkbox"
+			<Card className="form-card">
+				<form onSubmit={handleSubmit} className="form-stack">
+					<FormGroup label="Show">
+						<HTMLSelect
+							fill
+							value={selectedShow}
+							onChange={(e) => setSelectedShow(e.target.value)}
+							required
+						>
+							<option value="">Select a show</option>
+							{shows.map((s) => (
+								<option key={s.id} value={s.id}>
+									{new Date(s.date).toLocaleDateString()} — {formatShowTime(s.showTime)}
+								</option>
+							))}
+						</HTMLSelect>
+					</FormGroup>
+					<FormGroup label="Actors who signed in">
+						<div className="scrollbox">
+							{actors.map((actor) => (
+								<Checkbox
+									key={actor.id}
 									checked={selectedActors.has(actor.id)}
 									onChange={() => toggleActor(actor.id)}
+									label={`${actor.lastName}, ${actor.firstName}`}
 								/>
-								{actor.lastName}, {actor.firstName}
-							</label>
-						))}
-					</div>
-				</div>
-				{message && (
-					<div className={`alert ${message.includes('Success') ? 'alert--success' : 'alert--error'}`}>
-						{message}
-					</div>
-				)}
-				<button className="btn btn--primary" type="submit" disabled={submitting || selectedActors.size === 0}>
-					{submitting ? 'Submitting...' : 'Submit sign-ins'}
-				</button>
-			</form>
+							))}
+						</div>
+					</FormGroup>
+					{message && <Callout intent={message.type}>{message.text}</Callout>}
+					<Button
+						intent="primary"
+						type="submit"
+						loading={submitting}
+						disabled={submitting || selectedActors.size === 0}
+						text={submitting ? 'Submitting...' : 'Submit sign-ins'}
+					/>
+				</form>
+			</Card>
 		</div>
 	);
 }

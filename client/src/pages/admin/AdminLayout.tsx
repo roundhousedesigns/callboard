@@ -1,11 +1,22 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import {
+	Alignment,
+	Button,
+	ButtonGroup,
+	Navbar,
+	NavbarDivider,
+	NavbarGroup,
+	NavbarHeading,
+	Tag,
+} from '@blueprintjs/core';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
 
 export function AdminLayout() {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [hasActiveShow, setHasActiveShow] = useState(false);
 
 	async function handleLogout() {
@@ -47,58 +58,64 @@ export function AdminLayout() {
 		};
 	}, []);
 
+	const orgLabel = user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin';
+	const isActive = (path: string, exact = false) =>
+		exact ? location.pathname === path : location.pathname === path || location.pathname.startsWith(`${path}/`);
+
 	return (
 		<div className="app-shell">
-			<header className="no-print app-header">
-				<div className="container app-header__inner">
-					<nav className="app-nav" aria-label="Admin">
-						<NavLink
-							to="/admin"
-							end
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Callboard
-						</NavLink>
-						<NavLink
-							to="/admin/shows"
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Shows
-						</NavLink>
-						<NavLink
-							to="/admin/actors"
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Actors
-						</NavLink>
-						<NavLink
-							to="/admin/offline"
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Offline
-						</NavLink>
-						<NavLink
-							to="/admin/settings"
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Settings
-						</NavLink>
-						{hasActiveShow && (
-							<NavLink to="/admin/current-show">
-								Current show
-							</NavLink>
-						)}
-						<span className="badge">
-							{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
-						</span>
-					</nav>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-						<button className="btn btn--sm btn--ghost" onClick={() => void handleLogout()}>
-							Log out
-						</button>
-					</div>
+			<Navbar className="no-print app-navbar">
+				<div className="container app-navbar-inner">
+					<NavbarGroup align={Alignment.LEFT}>
+						<NavbarHeading>Callboard</NavbarHeading>
+						<NavbarDivider />
+						<ButtonGroup>
+							<Button
+								minimal
+								text="Callboard"
+								intent={isActive('/admin', true) ? 'primary' : undefined}
+								onClick={() => navigate('/admin')}
+							/>
+							<Button
+								minimal
+								text="Shows"
+								intent={isActive('/admin/shows') ? 'primary' : undefined}
+								onClick={() => navigate('/admin/shows')}
+							/>
+							<Button
+								minimal
+								text="Actors"
+								intent={isActive('/admin/actors') ? 'primary' : undefined}
+								onClick={() => navigate('/admin/actors')}
+							/>
+							<Button
+								minimal
+								text="Offline"
+								intent={isActive('/admin/offline') ? 'primary' : undefined}
+								onClick={() => navigate('/admin/offline')}
+							/>
+							<Button
+								minimal
+								text="Settings"
+								intent={isActive('/admin/settings') ? 'primary' : undefined}
+								onClick={() => navigate('/admin/settings')}
+							/>
+							{hasActiveShow && (
+								<Button
+									minimal
+									text="Current show"
+									intent={isActive('/admin/current-show') ? 'primary' : undefined}
+									onClick={() => navigate('/admin/current-show')}
+								/>
+							)}
+						</ButtonGroup>
+					</NavbarGroup>
+					<NavbarGroup align={Alignment.RIGHT}>
+						<Tag>{orgLabel}</Tag>
+						<Button minimal text="Log out" onClick={() => void handleLogout()} />
+					</NavbarGroup>
 				</div>
-			</header>
+			</Navbar>
 			<main className="app-main">
 				<div className="container">
 					<Outlet />

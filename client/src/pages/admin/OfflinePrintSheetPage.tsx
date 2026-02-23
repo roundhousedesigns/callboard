@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+	Button,
+	Callout,
+	Card,
+	Classes,
+	FormGroup,
+	Spinner,
+} from '@blueprintjs/core';
 import { useAuth } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
@@ -9,6 +18,7 @@ import { db } from '../../lib/offlineDb';
 
 export function OfflinePrintSheetPage() {
 	const { user } = useAuth();
+	const navigate = useNavigate();
 	const [actors, setActors] = useState<User[]>([]);
 	const [shows, setShows] = useState<Show[]>([]);
 	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
@@ -144,7 +154,13 @@ export function OfflinePrintSheetPage() {
 		window.print();
 	}
 
-	if (loading) return <div className="muted">Loading...</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Offline Attendance Sheet';
@@ -157,46 +173,46 @@ export function OfflinePrintSheetPage() {
 					<p className="page-subtitle">Offline Attendance Sheet</p>
 				</div>
 			</div>
-			<p className="muted">
+			<Callout intent={online ? 'primary' : 'warning'}>
 				{online
 					? 'You are online. Data is synced. Use this page to print a sheet before going offline.'
 					: 'You are offline. This sheet uses cached data. Mark sign-ins on paper, then use Manual Entry when back online.'}
-			</p>
-			<div className="no-print" style={{ margin: '1rem 0' }}>
-				<div className="toolbar">
-					<label className="field">
-						<span className="field-label">Start</span>
+			</Callout>
+			<Card className="no-print toolbar-card">
+				<div className="toolbar-grid">
+					<FormGroup label="Start" className="toolbar-field">
 						<input
+							className={Classes.INPUT}
 							type="date"
 							value={dateRange.start}
 							onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
 						/>
-					</label>
-					<label className="field">
-						<span className="field-label">End</span>
+					</FormGroup>
+					<FormGroup label="End" className="toolbar-field">
 						<input
+							className={Classes.INPUT}
 							type="date"
 							value={dateRange.end}
 							onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
 						/>
-					</label>
-					<button className="btn btn--sm btn--primary" onClick={handlePrint}>
-						Print sheet
-					</button>
-					{online && (
-						<a className="btn btn--sm btn--ghost" href="/admin/manual-entry">
-							Enter manual sign-ins
-						</a>
-					)}
+					</FormGroup>
+					<div className="toolbar-actions">
+						<Button small intent="primary" onClick={handlePrint} text="Print sheet" />
+						{online && (
+							<Button
+								small
+								text="Enter manual sign-ins"
+								onClick={() => navigate('/admin/manual-entry')}
+							/>
+						)}
+					</div>
 				</div>
-			</div>
-			<div className="card card--flat" style={{ marginBottom: '1rem' }}>
-				<p style={{ margin: 0, fontSize: '0.95rem' }}>
-					<strong>Instructions when offline:</strong> Print this sheet. As actors arrive, mark their
-					sign-in on the printed sheet. When internet is restored, go to Manual Entry to submit the
-					sign-ins.
-				</p>
-			</div>
+			</Card>
+			<Callout>
+				<strong>Instructions when offline:</strong> Print this sheet. As actors arrive, mark their
+				sign-in on the printed sheet. When internet is restored, go to Manual Entry to submit the
+				sign-ins.
+			</Callout>
 			<CallboardTable actors={actors} shows={shows} attendance={attendance} readOnly />
 		</div>
 	);

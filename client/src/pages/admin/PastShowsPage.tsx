@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Button, Card, HTMLTable, Spinner } from '@blueprintjs/core';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
 
@@ -12,6 +13,7 @@ interface Show {
 }
 
 export function PastShowsPage() {
+	const navigate = useNavigate();
 	const [shows, setShows] = useState<Show[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -32,7 +34,13 @@ export function PastShowsPage() {
 			.finally(() => setLoading(false));
 	}, []);
 
-	if (loading) return <div className="muted">Loading...</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
 
 	return (
 		<div>
@@ -42,8 +50,8 @@ export function PastShowsPage() {
 					<p className="page-subtitle">Closed shows can be reviewed and corrected.</p>
 				</div>
 			</div>
-			<div className="table-wrap">
-				<table>
+			<Card className="table-card">
+				<HTMLTable bordered striped interactive condensed className="admin-table">
 					<thead>
 						<tr>
 							<th>Date</th>
@@ -59,9 +67,11 @@ export function PastShowsPage() {
 								<td>{formatShowTime(show.showTime)}</td>
 								<td>{show.lockedAt ? new Date(show.lockedAt).toLocaleString() : '—'}</td>
 								<td>
-									<Link className="btn btn--sm btn--ghost" to={`/admin/past-shows/${show.id}`}>
-										View sign-in sheet
-									</Link>
+									<Button
+										small
+										text="View sign-in sheet"
+										onClick={() => navigate(`/admin/shows/past/${show.id}`)}
+									/>
 								</td>
 							</tr>
 						))}
@@ -73,8 +83,8 @@ export function PastShowsPage() {
 							</tr>
 						)}
 					</tbody>
-				</table>
-			</div>
+				</HTMLTable>
+			</Card>
 		</div>
 	);
 }

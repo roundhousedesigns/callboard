@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Callout, Card, Elevation, H3, Spinner } from '@blueprintjs/core';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
@@ -51,11 +52,10 @@ export function SignInLandingPage() {
 	if (loading || (!result && !error)) {
 		return (
 			<div className="auth-shell">
-				<div className="card auth-card" style={{ textAlign: 'center' }}>
-					<p className="muted" style={{ margin: 0 }}>
-						Processing sign-in...
-					</p>
-				</div>
+				<Card elevation={Elevation.TWO} className="auth-card form-stack text-center">
+					<Spinner size={24} />
+					<p className="page-subtitle">Processing sign-in...</p>
+				</Card>
 			</div>
 		);
 	}
@@ -63,12 +63,10 @@ export function SignInLandingPage() {
 	if (error) {
 		return (
 			<div className="auth-shell">
-				<div className="card auth-card stack" style={{ textAlign: 'center' }}>
-					<h2 style={{ color: 'var(--error)', margin: 0 }}>Sign-in failed</h2>
-					<p className="muted" style={{ margin: 0 }}>
-						{error}
-					</p>
-				</div>
+				<Card elevation={Elevation.TWO} className="auth-card form-stack text-center">
+					<H3>Sign-in failed</H3>
+					<Callout intent="danger">{error}</Callout>
+				</Card>
 			</div>
 		);
 	}
@@ -79,13 +77,11 @@ export function SignInLandingPage() {
 
 	return (
 		<div className="auth-shell">
-			<div className="stack" style={{ width: 'min(70rem, 100%)', margin: '0 auto' }}>
-				<div className="card auth-card stack" style={{ textAlign: 'center' }}>
-					<h2 style={{ color: 'var(--success)', margin: 0 }}>You're signed in</h2>
-					<p className="muted" style={{ margin: 0 }}>
-						{`Successfully signed in for ${showLabel}.`}
-					</p>
-				</div>
+			<div className="wide-stack">
+				<Card elevation={Elevation.TWO} className="auth-card form-stack text-center">
+					<H3>You're signed in</H3>
+					<Callout intent="success">{`Successfully signed in for ${showLabel}.`}</Callout>
+				</Card>
 				<ActiveShowCallboard heading="Current callboard" />
 			</div>
 		</div>
