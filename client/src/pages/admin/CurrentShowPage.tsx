@@ -50,7 +50,7 @@ export function CurrentShowPage() {
 	);
 
 	return (
-		<div style={{ padding: '1.25rem' }}>
+		<div>
 			<div className="page-header">
 				<div>
 					<h1 className="page-title">{displayTitle}</h1>

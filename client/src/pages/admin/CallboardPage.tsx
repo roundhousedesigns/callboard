@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button, Card, Classes, FormGroup, Spinner } from '@blueprintjs/core';
 import { useAuth } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
@@ -127,7 +128,13 @@ export function CallboardPage() {
 		window.print();
 	}
 
-	if (loading) return <div className="muted">Loading...</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
@@ -140,45 +147,38 @@ export function CallboardPage() {
 					<p className="page-subtitle">Callboard</p>
 				</div>
 			</div>
-			<div
-				className="no-print"
-				style={{ marginBottom: '1rem' }}
-			>
-				<div className="toolbar">
-					<label className="field">
-						<span className="field-label">Start</span>
+			<Card className="no-print toolbar-card">
+				<div className="toolbar-grid">
+					<FormGroup label="Start" className="toolbar-field">
 						<input
+							className={Classes.INPUT}
 							type="date"
 							value={dateRange.start}
 							onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
 						/>
-					</label>
-					<label className="field">
-						<span className="field-label">End</span>
+					</FormGroup>
+					<FormGroup label="End" className="toolbar-field">
 						<input
+							className={Classes.INPUT}
 							type="date"
 							value={dateRange.end}
 							onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
 						/>
-					</label>
-					<button className="btn btn--sm" type="button" onClick={setThisWeek}>
-						This Week
-					</button>
-					<button
-						className="btn btn--sm btn--ghost"
-						type="button"
-						onClick={() => {
-							void loadData(false);
-						}}
-						disabled={refreshing || loading}
-					>
-						{refreshing ? 'Refreshing...' : 'Refresh'}
-					</button>
-					<button className="btn btn--sm btn--primary" type="button" onClick={handlePrint}>
-						Print report
-					</button>
+					</FormGroup>
+					<div className="toolbar-actions">
+						<Button small text="This week" onClick={setThisWeek} />
+						<Button
+							small
+							text={refreshing ? 'Refreshing...' : 'Refresh'}
+							onClick={() => {
+								void loadData(false);
+							}}
+							disabled={refreshing || loading}
+						/>
+						<Button small intent="primary" text="Print report" onClick={handlePrint} />
+					</div>
 				</div>
-			</div>
+			</Card>
 			<CallboardTable
 				actors={actors}
 				shows={shows}

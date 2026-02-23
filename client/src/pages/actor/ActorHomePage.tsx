@@ -1,4 +1,5 @@
 import { useAuth } from '../../lib/auth';
+import { Card, Elevation, H3 } from '@blueprintjs/core';
 
 // This page does not trigger sign-in. Actors must sign in by scanning the QR code (/s/:token).
 export function ActorHomePage() {
@@ -6,19 +7,19 @@ export function ActorHomePage() {
 
 	return (
 		<div className="auth-shell">
-			<div className="card auth-card stack" style={{ maxWidth: '420px' }}>
-				<h1 className="auth-title">Callboard</h1>
-				<p className="muted" style={{ textAlign: 'center' }}>
+			<Card elevation={Elevation.TWO} className="auth-card form-stack">
+				<H3 className="auth-title">Callboard</H3>
+				<p className="page-subtitle text-center">
 					You're signed in as{' '}
 					<strong>
 						{user?.firstName} {user?.lastName}
 					</strong>
 					.
 				</p>
-				<p className="muted" style={{ textAlign: 'center' }}>
+				<p className="page-subtitle text-center">
 					Scan the QR code at the callboard to sign in for a show.
 				</p>
-			</div>
+			</Card>
 		</div>
 	);
 }

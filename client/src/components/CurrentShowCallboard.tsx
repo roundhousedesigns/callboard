@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Callout, Card, Elevation, H4, Spinner } from '@blueprintjs/core';
 import { CallboardTable, type Actor, type AttendanceRecord, type Show } from './CallboardTable';
 
 export interface CurrentShowCallboardData {
@@ -72,25 +73,29 @@ export function CurrentShowCallboard({
 		};
 	}, [load]);
 
-	if (loading) return <div className="muted">Loading...</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
 
 	if (noActiveShow) {
 		return (
-			<div className="card card--flat" style={{ maxWidth: '60rem' }}>
-				{heading ? <h2 style={{ marginTop: 0 }}>{heading}</h2> : null}
-				<p className="muted" style={{ margin: 0 }}>
-					No active show right now.
-				</p>
-			</div>
+			<Card elevation={Elevation.ONE} className="current-show-card">
+				{heading ? <H4>{heading}</H4> : null}
+				<Callout intent="warning">No active show right now.</Callout>
+			</Card>
 		);
 	}
 
 	if (error) {
 		return (
-			<div className="card card--flat" style={{ maxWidth: '60rem' }}>
-				{heading ? <h2 style={{ marginTop: 0 }}>{heading}</h2> : null}
-				<div className="alert alert--error">{error}</div>
-			</div>
+			<Card elevation={Elevation.ONE} className="current-show-card">
+				{heading ? <H4>{heading}</H4> : null}
+				<Callout intent="danger">{error}</Callout>
+			</Card>
 		);
 	}
 
@@ -115,7 +120,7 @@ export function CurrentShowCallboard({
 
 	return (
 		<div>
-			{heading ? <h2 style={{ marginTop: 0 }}>{heading}</h2> : null}
+			{heading ? <H4>{heading}</H4> : null}
 			<CallboardTable
 				actors={data.actors}
 				shows={[data.show]}

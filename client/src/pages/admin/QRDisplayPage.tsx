@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button, Callout, Card, Elevation, H3, Spinner } from '@blueprintjs/core';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
@@ -34,44 +35,45 @@ export function QRDisplayPage() {
 	if (error) {
 		const isNoActive = error.toLowerCase().includes('no active show');
 		return (
-			<div className="centered">
-				<div className="card auth-card stack" style={{ maxWidth: '460px', textAlign: 'center' }}>
-					<h2 style={{ color: isNoActive ? 'var(--text-muted)' : 'var(--error)', margin: 0 }}>
-						{isNoActive ? 'No active show' : error}
-					</h2>
-				{isNoActive && (
-					<p className="muted" style={{ margin: 0 }}>
-						Open sign-in for a show from the Shows page to display the QR code.
-					</p>
-				)}
-					<button className="btn btn--primary no-print" type="button" onClick={loadActiveShow}>
-						Refresh
-					</button>
-				</div>
+			<div className="page-centered">
+				<Card elevation={Elevation.TWO} className="auth-card form-stack">
+					<H3>{isNoActive ? 'No active show' : 'Unable to load active show'}</H3>
+					<Callout intent={isNoActive ? 'warning' : 'danger'}>
+						{isNoActive
+							? 'Open sign-in for a show from the Shows page to display the QR code.'
+							: error}
+					</Callout>
+					<Button className="no-print" intent="primary" text="Refresh" onClick={loadActiveShow} />
+				</Card>
 			</div>
 		);
 	}
-	if (!show) return <div className="muted">Loading...</div>;
+
+	if (!show) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
+
 	if (!show.signInToken) {
 		return (
-			<div>
-				<div className="alert">
-					<p style={{ margin: 0 }}>
-						No active show. Open sign-in for a show from the Shows page first.
-					</p>
-				</div>
-			</div>
+			<Callout intent="warning">
+				No active show. Open sign-in for a show from the Shows page first.
+			</Callout>
 		);
 	}
+
 	if (show.lockedAt) {
 		return (
-			<div>
-				<h2 style={{ marginBottom: '0.25rem' }}>No active show</h2>
-				<p className="muted">
+			<Card elevation={Elevation.ONE} className="form-stack">
+				<H3>No active show</H3>
+				<p className="page-subtitle">
 					{new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
 				</p>
-				<p>This show has been closed for sign-in.</p>
-			</div>
+				<Callout intent="warning">This show has been closed for sign-in.</Callout>
+			</Card>
 		);
 	}
 
@@ -79,24 +81,27 @@ export function QRDisplayPage() {
 	const signInUrl = `${baseUrl}/s/${show.signInToken}`;
 
 	return (
-		<div className="centered">
-			<div className="card auth-card stack" style={{ maxWidth: '520px', textAlign: 'center' }}>
-				<div>
-					<h1 className="auth-title">Scan to sign in</h1>
+		<div className="page-centered">
+			<Card elevation={Elevation.TWO} className="auth-card form-stack qr-page-card">
+				<div className="text-center">
+					<H3 className="auth-title">Scan to sign in</H3>
 					<p className="auth-subtitle">
-				{new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
+						{new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
 					</p>
 				</div>
-				<button className="btn btn--primary no-print" type="button" onClick={() => window.print()}>
-					Print QR sheet
-				</button>
-				<div className="qr-box" style={{ margin: '0 auto' }}>
+				<Button
+					className="no-print"
+					intent="primary"
+					text="Print QR sheet"
+					onClick={() => window.print()}
+				/>
+				<div className="qr-box">
 					<QRCodeSVG value={signInUrl} size={256} level="H" />
 				</div>
-				<p className="muted" style={{ fontSize: '0.95rem', margin: 0 }}>
+				<p className="page-subtitle text-center">
 					Actors must be logged in to sign in.
 				</p>
-			</div>
+			</Card>
 		</div>
 	);
 }

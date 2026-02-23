@@ -1,31 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import {
+	Button,
+	Callout,
+	Card,
+	Classes,
+	FormGroup,
+	HTMLTable,
+	Spinner,
+} from '@blueprintjs/core';
 import { api } from '../../lib/api';
 import { formatShowTime, toLocalDateStr } from '../../lib/dateUtils';
-
-function QRCodeIcon() {
-	return (
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="20"
-			height="20"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden
-		>
-			<rect x="3" y="3" width="7" height="7" rx="1" />
-			<rect x="14" y="3" width="7" height="7" rx="1" />
-			<rect x="3" y="14" width="7" height="7" rx="1" />
-			<rect x="14" y="14" width="3" height="3" rx="0.5" />
-			<rect x="19" y="14" width="2" height="2" rx="0.5" />
-			<rect x="14" y="19" width="2" height="2" rx="0.5" />
-		</svg>
-	);
-}
 
 interface Show {
 	id: string;
@@ -37,8 +22,10 @@ interface Show {
 }
 
 export function ShowsPage() {
+	const navigate = useNavigate();
 	const [shows, setShows] = useState<Show[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [message, setMessage] = useState<{ type: 'danger' | 'success'; text: string } | null>(null);
 	const [form, setForm] = useState({ date: '', showTime: '' });
 	const [editingShowId, setEditingShowId] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState({ date: '', showTime: '' });
@@ -52,6 +39,7 @@ export function ShowsPage() {
 
 	async function handleCreate(e: React.FormEvent) {
 		e.preventDefault();
+		setMessage(null);
 		try {
 			const show = await api.post<Show>('/shows', form);
 			setShows((prev) =>
@@ -62,36 +50,49 @@ export function ShowsPage() {
 				),
 			);
 			setForm({ date: '', showTime: '' });
+			setMessage({ type: 'success', text: 'Show added.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed');
+			setMessage({ type: 'danger', text: err instanceof Error ? err.message : 'Failed to create show.' });
 		}
 	}
 
 	async function handleActivate(id: string) {
+		setMessage(null);
 		try {
 			const updated = await api.post<Show>(`/shows/${id}/activate`);
 			setShows((prev) => prev.map((s) => (s.id === id ? updated : { ...s, activeAt: null })));
+			setMessage({ type: 'success', text: 'Sign-in opened.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed');
+			setMessage({
+				type: 'danger',
+				text: err instanceof Error ? err.message : 'Failed to open sign-in.',
+			});
 		}
 	}
 
 	async function handleCloseSignIn(id: string) {
+		setMessage(null);
 		try {
 			const updated = await api.post<Show>(`/shows/${id}/close-signin`);
 			setShows((prev) => prev.map((s) => (s.id === id ? updated : s)));
+			setMessage({ type: 'success', text: 'Sign-in closed.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed');
+			setMessage({
+				type: 'danger',
+				text: err instanceof Error ? err.message : 'Failed to close sign-in.',
+			});
 		}
 	}
 
 	async function handleDelete(id: string) {
 		if (!confirm('Delete this show?')) return;
+		setMessage(null);
 		try {
 			await api.delete(`/shows/${id}`);
 			setShows((prev) => prev.filter((s) => s.id !== id));
+			setMessage({ type: 'success', text: 'Show deleted.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed');
+			setMessage({ type: 'danger', text: err instanceof Error ? err.message : 'Failed to delete show.' });
 		}
 	}
 
@@ -108,6 +109,7 @@ export function ShowsPage() {
 	}
 
 	async function handleSaveEdit(id: string) {
+		setMessage(null);
 		try {
 			const updated = await api.patch<Show>(`/shows/${id}`, editForm);
 			setShows((prev) =>
@@ -120,8 +122,12 @@ export function ShowsPage() {
 					),
 			);
 			setEditingShowId(null);
+			setMessage({ type: 'success', text: 'Show updated.' });
 		} catch (err) {
-			alert(err instanceof Error ? err.message : 'Failed to update show');
+			setMessage({
+				type: 'danger',
+				text: err instanceof Error ? err.message : 'Failed to update show.',
+			});
 		}
 	}
 
@@ -139,7 +145,13 @@ export function ShowsPage() {
 		: eligibleShows;
 	const highlightedShowId = currentShow?.id ?? nextEligibleShowId;
 
-	if (loading) return <div className="muted">Loading...</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
 
 	return (
 		<div>
@@ -149,36 +161,35 @@ export function ShowsPage() {
 					<p className="page-subtitle">Create upcoming shows and open sign-in.</p>
 				</div>
 			</div>
-			<form
-				onSubmit={handleCreate}
-				className="toolbar no-print"
-				style={{ marginBottom: '1rem' }}
-			>
-				<label className="field">
-					<span className="field-label">Date</span>
-					<input
-						type="date"
-						value={form.date}
-						onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field">
-					<span className="field-label">Time</span>
-					<input
-						type="time"
-						value={form.showTime}
-						onChange={(e) => setForm((p) => ({ ...p, showTime: e.target.value }))}
-						required
-					/>
-				</label>
-				<button className="btn btn--primary btn--sm" type="submit">
-					Add show
-				</button>
-			</form>
+			{message && <Callout intent={message.type}>{message.text}</Callout>}
+			<Card className="no-print toolbar-card">
+				<form onSubmit={handleCreate} className="toolbar-grid">
+					<FormGroup label="Date" className="toolbar-field">
+						<input
+							className={Classes.INPUT}
+							type="date"
+							value={form.date}
+							onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
+							required
+						/>
+					</FormGroup>
+					<FormGroup label="Time" className="toolbar-field">
+						<input
+							className={Classes.INPUT}
+							type="time"
+							value={form.showTime}
+							onChange={(e) => setForm((p) => ({ ...p, showTime: e.target.value }))}
+							required
+						/>
+					</FormGroup>
+					<div className="toolbar-actions">
+						<Button small intent="primary" type="submit" text="Add show" />
+					</div>
+				</form>
+			</Card>
 
-			<div className="table-wrap">
-				<table>
+			<Card className="table-card">
+				<HTMLTable bordered striped interactive className="admin-table">
 					<thead>
 						<tr>
 							<th>Date</th>
@@ -196,8 +207,7 @@ export function ShowsPage() {
 									style={
 										isHighlighted
 											? {
-													background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
-													borderLeft: '3px solid var(--accent)',
+													background: 'color-mix(in srgb, var(--app-accent) 14%, transparent)',
 												}
 											: undefined
 									}
@@ -206,6 +216,7 @@ export function ShowsPage() {
 										<>
 											<td>
 												<input
+													className={Classes.INPUT}
 													type="date"
 													value={editForm.date}
 													onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))}
@@ -214,6 +225,7 @@ export function ShowsPage() {
 											</td>
 											<td>
 												<input
+													className={Classes.INPUT}
 													type="time"
 													value={editForm.showTime}
 													onChange={(e) => setEditForm((p) => ({ ...p, showTime: e.target.value }))}
@@ -222,24 +234,20 @@ export function ShowsPage() {
 											</td>
 											<td
 												className="no-print"
-												style={{
-													display: 'flex',
-													gap: '0.5rem',
-													flexWrap: 'wrap',
-													alignItems: 'center',
-													justifyContent: 'flex-end',
-												}}
+												style={{ whiteSpace: 'nowrap' }}
 											>
-												<button
-													className="btn btn--sm btn--primary"
-													type="button"
-													onClick={() => handleSaveEdit(show.id)}
-												>
-													Save
-												</button>
-												<button className="btn btn--sm" type="button" onClick={cancelEdit}>
-													Cancel
-												</button>
+												<div className="inline-actions align-right">
+													<Button
+														small
+														intent="primary"
+														type="button"
+														text="Save"
+														onClick={() => {
+															void handleSaveEdit(show.id);
+														}}
+													/>
+													<Button small type="button" text="Cancel" onClick={cancelEdit} />
+												</div>
 											</td>
 										</>
 									) : (
@@ -248,56 +256,53 @@ export function ShowsPage() {
 											<td>{formatShowTime(show.showTime)}</td>
 											<td
 												className="no-print"
-												style={{
-													display: 'flex',
-													gap: '0.5rem',
-													flexWrap: 'wrap',
-													alignItems: 'center',
-													justifyContent: 'flex-end',
-												}}
+												style={{ whiteSpace: 'nowrap' }}
 											>
-												<button
-													className="btn btn--sm btn--ghost"
-													type="button"
-													onClick={() => startEdit(show)}
-												>
-													Edit
-												</button>
+												<div className="inline-actions align-right">
+													<Button
+														small
+														type="button"
+														text="Edit"
+														onClick={() => startEdit(show)}
+													/>
 												{show.activeAt ? (
 													<>
-														<Link
-															to="/admin/qr"
-															aria-label="Open QR code"
-															className="btn btn--sm btn--ghost"
-															style={{ padding: '0.35rem 0.5rem' }}
-														>
-															<QRCodeIcon />
-														</Link>
-														<button
-															className="btn btn--sm"
-															onClick={() => handleCloseSignIn(show.id)}
-														>
-															Close sign-in
-														</button>
+														<Button
+															small
+															text="QR"
+															onClick={() => navigate('/admin/qr')}
+														/>
+														<Button
+															small
+															text="Close sign-in"
+															onClick={() => {
+																void handleCloseSignIn(show.id);
+															}}
+														/>
 													</>
 												) : (
 													<>
 														{!currentShow && show.id === nextEligibleShowId ? (
-															<button
-																className="btn btn--sm btn--primary"
-																onClick={() => handleActivate(show.id)}
-															>
-																Open sign-in
-															</button>
+															<Button
+																small
+																intent="primary"
+																text="Open sign-in"
+																onClick={() => {
+																	void handleActivate(show.id);
+																}}
+															/>
 														) : null}
-														<button
-															className="btn btn--sm btn--danger"
-															onClick={() => handleDelete(show.id)}
-														>
-															Delete
-														</button>
+														<Button
+															small
+															intent="danger"
+															text="Delete"
+															onClick={() => {
+																void handleDelete(show.id);
+															}}
+														/>
 													</>
 												)}
+												</div>
 											</td>
 										</>
 									)}
@@ -312,8 +317,8 @@ export function ShowsPage() {
 							</tr>
 						)}
 					</tbody>
-				</table>
-			</div>
+				</HTMLTable>
+			</Card>
 		</div>
 	);
 }

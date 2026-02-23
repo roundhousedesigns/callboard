@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Button, Callout, Spinner } from '@blueprintjs/core';
 import { useAuth } from '../../lib/auth';
 import { CallboardTable, type AttendanceRecord, type Show } from '../../components/CallboardTable';
 import { api } from '../../lib/api';
@@ -8,6 +9,7 @@ import { formatShowTime } from '../../lib/dateUtils';
 
 export function PastShowSheetPage() {
 	const { showId } = useParams<{ showId: string }>();
+	const navigate = useNavigate();
 	const { user } = useAuth();
 	const [show, setShow] = useState<Show | null>(null);
 	const [actors, setActors] = useState<User[]>([]);
@@ -62,9 +64,16 @@ export function PastShowSheetPage() {
 		}
 	}
 
-	if (loading) return <div className="muted">Loading...</div>;
-	if (error) return <div className="alert alert--error">{error}</div>;
-	if (!show) return <div className="alert">Show not found.</div>;
+	if (loading) {
+		return (
+			<div className="page-centered">
+				<Spinner size={28} />
+			</div>
+		);
+	}
+
+	if (error) return <Callout intent="danger">{error}</Callout>;
+	if (!show) return <Callout intent="warning">Show not found.</Callout>;
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Sign-in sheet corrections';
@@ -77,9 +86,7 @@ export function PastShowSheetPage() {
 					<p className="page-subtitle">Sign-in sheet corrections</p>
 				</div>
 				<div className="no-print">
-					<Link className="btn btn--sm btn--ghost" to="/admin/shows">
-						Back to shows
-					</Link>
+					<Button small text="Back to shows" onClick={() => navigate('/admin/shows')} />
 				</div>
 			</div>
 			<p className="muted">
