@@ -3,30 +3,6 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
 
-function QRCodeIcon() {
-	return (
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			width="20"
-			height="20"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden
-		>
-			<rect x="3" y="3" width="7" height="7" rx="1" />
-			<rect x="14" y="3" width="7" height="7" rx="1" />
-			<rect x="3" y="14" width="7" height="7" rx="1" />
-			<rect x="14" y="14" width="3" height="3" rx="0.5" />
-			<rect x="19" y="14" width="2" height="2" rx="0.5" />
-			<rect x="14" y="19" width="2" height="2" rx="0.5" />
-		</svg>
-	);
-}
-
 export function AdminLayout() {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
@@ -73,9 +49,7 @@ export function AdminLayout() {
 
 	return (
 		<div className="app-shell">
-			<header
-				className="no-print app-header"
-			>
+			<header className="no-print app-header">
 				<div className="container app-header__inner">
 					<nav className="app-nav" aria-label="Admin">
 						<NavLink
@@ -109,26 +83,16 @@ export function AdminLayout() {
 						>
 							Settings
 						</NavLink>
-					</nav>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-						{user?.organization?.showTitle && (
-							<NavLink
-								to="/admin/qr"
-								className={({ isActive }) => `nav-link nav-link--icon nav-link--qr${isActive ? ' active' : ''}`}
-								aria-label="Current QR code"
-								title="Current QR code"
-							>
-								<QRCodeIcon />
-							</NavLink>
-						)}
 						{hasActiveShow && (
-							<NavLink to="/admin/current-show" className="btn btn--sm btn--ghost">
+							<NavLink to="/admin/current-show">
 								Current show
 							</NavLink>
 						)}
 						<span className="badge">
 							{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
 						</span>
+					</nav>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
 						<button className="btn btn--sm btn--ghost" onClick={() => void handleLogout()}>
 							Log out
 						</button>

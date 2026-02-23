@@ -83,6 +83,17 @@ router.post("/register", asyncHandler(async (req, res) => {
         role: data.role,
         organizationId,
       },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        organizationId: true,
+        organization: {
+          select: { name: true, slug: true, showTitle: true, weekStartsOn: true },
+        },
+      },
     });
 
     const { accessToken, refreshToken } = createTokens({
@@ -113,6 +124,7 @@ router.post("/register", asyncHandler(async (req, res) => {
           lastName: user.lastName,
           role: user.role,
           organizationId: user.organizationId,
+          organization: user.organization,
         },
       });
   } catch (err) {
@@ -130,6 +142,18 @@ router.post("/login", asyncHandler(async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { email: data.email },
+      select: {
+        id: true,
+        email: true,
+        hashedPassword: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        organizationId: true,
+        organization: {
+          select: { name: true, slug: true, showTitle: true, weekStartsOn: true },
+        },
+      },
     });
     if (!user || !(await bcrypt.compare(data.password, user.hashedPassword))) {
       res.status(401).json({ error: "Invalid email or password" });
@@ -164,6 +188,7 @@ router.post("/login", asyncHandler(async (req, res) => {
           lastName: user.lastName,
           role: user.role,
           organizationId: user.organizationId,
+          organization: user.organization,
         },
       });
   } catch (err) {
