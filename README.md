@@ -41,6 +41,12 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
    yarn dev
    ```
 
+   To run the app in host mode, run:
+
+   ```bash
+   yarn dev:host [--host=domain.com]
+   ```
+
 5. Open <http://localhost:5173>
    Demo credentials (password: `password123`):
    - Admin: `admin@demo.theatre`
