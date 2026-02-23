@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
+import { Button } from '../../components/ui';
 
 interface Show {
 	id: string;
@@ -44,9 +45,14 @@ export function QRDisplayPage() {
 						Open sign-in for a show from the Shows page to display the QR code.
 					</p>
 				)}
-					<button className="btn btn--primary no-print" type="button" onClick={loadActiveShow}>
+					<Button
+						className="no-print"
+						variant="primary"
+						type="button"
+						onPress={loadActiveShow}
+					>
 						Refresh
-					</button>
+					</Button>
 				</div>
 			</div>
 		);
@@ -87,9 +93,14 @@ export function QRDisplayPage() {
 				{new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
 					</p>
 				</div>
-				<button className="btn btn--primary no-print" type="button" onClick={() => window.print()}>
+				<Button
+					className="no-print"
+					variant="primary"
+					type="button"
+					onPress={() => window.print()}
+				>
 					Print QR sheet
-				</button>
+				</Button>
 				<div className="qr-box" style={{ margin: '0 auto' }}>
 					<QRCodeSVG value={signInUrl} size={256} level="H" />
 				</div>

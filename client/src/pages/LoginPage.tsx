@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { Button, TextFieldInput } from '../components/ui';
 
 export function LoginPage() {
 	const [email, setEmail] = useState('');
@@ -14,10 +15,12 @@ export function LoginPage() {
 	// Actors go to /actor; never auto sign them into the active show (they must use the QR flow).
 	const defaultRedirect = user?.role === 'admin' ? '/admin' : '/actor';
 
-	if (user) {
+	useEffect(() => {
+		if (!user) return;
 		navigate(redirect ?? defaultRedirect, { replace: true });
-		return null;
-	}
+	}, [defaultRedirect, navigate, redirect, user]);
+
+	if (user) return null;
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -44,26 +47,36 @@ export function LoginPage() {
 					<h1 className="auth-title">Callboard</h1>
 					<p className="auth-subtitle">Sign in to your account</p>
 				</div>
-				{error && <div style={{ color: 'var(--error)', fontSize: '0.9rem' }}>{error}</div>}
-				<input
-					type="email"
-					placeholder="Email"
+				{error && <div className="alert alert--error">{error}</div>}
+				<TextFieldInput
+					aria-label="Email"
 					value={email}
-					onChange={(e) => setEmail(e.target.value)}
-					required
-					autoComplete="email"
+					onChange={setEmail}
+					isRequired
+					inputProps={{
+						type: 'email',
+						placeholder: 'Email',
+						autoComplete: 'email',
+					}}
 				/>
-				<input
-					type="password"
-					placeholder="Password"
+				<TextFieldInput
+					aria-label="Password"
 					value={password}
-					onChange={(e) => setPassword(e.target.value)}
-					required
-					autoComplete="current-password"
+					onChange={setPassword}
+					isRequired
+					inputProps={{
+						type: 'password',
+						placeholder: 'Password',
+						autoComplete: 'current-password',
+					}}
 				/>
-				<button className="btn btn--primary" type="submit" disabled={loading}>
+				<Button
+					variant="primary"
+					type="submit"
+					isDisabled={loading}
+				>
 					{loading ? 'Signing in...' : 'Sign in'}
-				</button>
+				</Button>
 			</form>
 		</div>
 	);

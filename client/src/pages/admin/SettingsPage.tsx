@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { FileTrigger } from 'react-aria-components';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatShowTime } from '../../lib/dateUtils';
+import { Button, Checkbox, SelectField, TextFieldInput } from '../../components/ui';
 
 interface ImportResult {
 	createdCount: number;
@@ -37,7 +39,7 @@ export function SettingsPage() {
 	const [importResult, setImportResult] = useState<ImportResult | null>(null);
 	const [importLoading, setImportLoading] = useState(false);
 	const [importError, setImportError] = useState<string | null>(null);
-	const importInputRef = useRef<HTMLInputElement>(null);
+	const [fileTriggerKey, setFileTriggerKey] = useState(0);
 
 	useEffect(() => {
 		async function load() {
@@ -98,7 +100,7 @@ export function SettingsPage() {
 			if (!res.ok) throw new Error(data.error ?? 'Import failed');
 			setImportResult(data);
 			setImportFile(null);
-			if (importInputRef.current) importInputRef.current.value = '';
+			setFileTriggerKey((prev) => prev + 1);
 		} catch (err) {
 			setImportError(err instanceof Error ? err.message : 'Import failed');
 		} finally {
@@ -125,39 +127,35 @@ export function SettingsPage() {
 			</div>
 			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
 				<form onSubmit={handleSubmit} className="stack">
-					<label className="field" htmlFor="showTitle">
-						<span className="field-label">Show title</span>
-						<input
-							id="showTitle"
-							type="text"
+					<div className="field">
+						<TextFieldInput
+							label="Show title"
 							value={showTitle}
-							onChange={(e) => setShowTitle(e.target.value)}
-							placeholder={orgName}
-							style={{ width: '100%' }}
+							onChange={setShowTitle}
+							inputProps={{
+								type: 'text',
+								placeholder: orgName,
+							}}
 						/>
-						<p className="muted" style={{ fontSize: '0.9rem', margin: 0 }}>
+						<p className="field-help">
 							Displayed in header, reports, and printouts. Falls back to org name if empty.
 						</p>
-					</label>
+					</div>
 
-					<label className="field" htmlFor="weekStartsOn">
-						<span className="field-label">Week starts on</span>
-						<select
-							id="weekStartsOn"
-							value={weekStartsOn}
-							onChange={(e) => setWeekStartsOn(Number(e.target.value))}
-							style={{ width: '12rem' }}
-						>
-							{WEEKDAY_OPTIONS.map((opt) => (
-								<option key={opt.value} value={opt.value}>
-									{opt.label}
-								</option>
-							))}
-						</select>
-						<p className="muted" style={{ fontSize: '0.9rem', margin: 0 }}>
+					<div className="field" style={{ width: '12rem' }}>
+						<SelectField
+							label="Week starts on"
+							selectedKey={String(weekStartsOn)}
+							onSelectionChange={(key) => setWeekStartsOn(Number(key))}
+							options={WEEKDAY_OPTIONS.map((opt) => ({
+								id: String(opt.value),
+								label: opt.label,
+							}))}
+						/>
+						<p className="field-help">
 							Callboard weekly view shows shows starting from this day.
 						</p>
-					</label>
+					</div>
 
 					{message && (
 						<div className={`alert ${message.type === 'error' ? 'alert--error' : 'alert--success'}`}>
@@ -165,9 +163,13 @@ export function SettingsPage() {
 						</div>
 					)}
 
-					<button className="btn btn--primary" type="submit" disabled={saving}>
+					<Button
+						variant="primary"
+						type="submit"
+						isDisabled={saving}
+					>
 						{saving ? 'Saving...' : 'Save settings'}
-					</button>
+					</Button>
 				</form>
 			</div>
 
@@ -180,23 +182,34 @@ export function SettingsPage() {
 			</p>
 			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
 				<form onSubmit={handleImportSubmit} className="stack">
-					<input
-						ref={importInputRef}
-						type="file"
-						accept=".csv,.xlsx,.xls"
-						onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
-					/>
-					<label className="checkbox-row">
-						<input
-							type="checkbox"
-							checked={skipDuplicates}
-							onChange={(e) => setSkipDuplicates(e.target.checked)}
-						/>
+					<div className="stack" style={{ gap: '0.4rem' }}>
+						<FileTrigger
+							key={fileTriggerKey}
+							acceptedFileTypes={['.csv', '.xlsx', '.xls']}
+							onSelect={(files) => {
+								const next = files ? Array.from(files)[0] ?? null : null;
+								setImportFile(next);
+							}}
+						>
+							<Button type="button" size="sm">
+								{importFile ? 'Choose different file' : 'Choose file'}
+							</Button>
+						</FileTrigger>
+						<p className="field-help">{importFile ? importFile.name : 'No file selected'}</p>
+					</div>
+					<Checkbox
+						isSelected={skipDuplicates}
+						onChange={setSkipDuplicates}
+					>
 						Skip duplicate shows (same date + time)
-					</label>
-					<button className="btn btn--primary" type="submit" disabled={!importFile || importLoading}>
+					</Checkbox>
+					<Button
+						variant="primary"
+						type="submit"
+						isDisabled={!importFile || importLoading}
+					>
 						{importLoading ? 'Importing...' : 'Import'}
-					</button>
+					</Button>
 				</form>
 
 				{importError && (

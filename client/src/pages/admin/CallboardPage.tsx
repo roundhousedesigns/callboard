@@ -8,6 +8,7 @@ import {
 	toLocalDateStr,
 	getWeekBoundsWithStart,
 } from '../../lib/dateUtils';
+import { Button, TextFieldInput } from '../../components/ui';
 
 /**
  * Week range for callboard: the full week containing "today", where "week" starts on
@@ -145,38 +146,44 @@ export function CallboardPage() {
 				style={{ marginBottom: '1rem' }}
 			>
 				<div className="toolbar">
-					<label className="field">
-						<span className="field-label">Start</span>
-						<input
-							type="date"
-							value={dateRange.start}
-							onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
-						/>
-					</label>
-					<label className="field">
-						<span className="field-label">End</span>
-						<input
-							type="date"
-							value={dateRange.end}
-							onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
-						/>
-					</label>
-					<button className="btn btn--sm" type="button" onClick={setThisWeek}>
-						This Week
-					</button>
-					<button
-						className="btn btn--sm btn--ghost"
+					<TextFieldInput
+						label="Start"
+						value={dateRange.start}
+						onChange={(value) => setDateRange((p) => ({ ...p, start: value }))}
+						inputProps={{ type: 'date' }}
+					/>
+					<TextFieldInput
+						label="End"
+						value={dateRange.end}
+						onChange={(value) => setDateRange((p) => ({ ...p, end: value }))}
+						inputProps={{ type: 'date' }}
+					/>
+					<Button
+						size="sm"
 						type="button"
-						onClick={() => {
+						onPress={setThisWeek}
+					>
+						This Week
+					</Button>
+					<Button
+						size="sm"
+						variant="ghost"
+						type="button"
+						onPress={() => {
 							void loadData(false);
 						}}
-						disabled={refreshing || loading}
+						isDisabled={refreshing || loading}
 					>
 						{refreshing ? 'Refreshing...' : 'Refresh'}
-					</button>
-					<button className="btn btn--sm btn--primary" type="button" onClick={handlePrint}>
+					</Button>
+					<Button
+						size="sm"
+						variant="primary"
+						type="button"
+						onPress={handlePrint}
+					>
 						Print report
-					</button>
+					</Button>
 				</div>
 			</div>
 			<CallboardTable

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
+import { Button, Checkbox, SelectField } from '../../components/ui';
 
 interface Show {
 	id: string;
@@ -71,29 +72,30 @@ export function ManualEntryPage() {
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="card card--flat stack" style={{ maxWidth: '34rem' }}>
-				<label className="field">
-					<span className="field-label">Show</span>
-					<select value={selectedShow} onChange={(e) => setSelectedShow(e.target.value)} required>
-						<option value="">Select a show</option>
-						{shows.map((s) => (
-							<option key={s.id} value={s.id}>
-								{new Date(s.date).toLocaleDateString()} — {formatShowTime(s.showTime)}
-							</option>
-						))}
-					</select>
-				</label>
+				<SelectField
+					label="Show"
+					placeholder="Select a show"
+					selectedKey={selectedShow || null}
+					onSelectionChange={setSelectedShow}
+					isRequired
+					options={shows.map((show) => ({
+						id: show.id,
+						label: `${new Date(show.date).toLocaleDateString()} — ${formatShowTime(show.showTime)}`,
+					}))}
+				/>
 				<div className="field">
 					<span className="field-label">Actors who signed in</span>
 					<div className="scrollbox">
 						{actors.map((actor) => (
-							<label key={actor.id} className="checkbox-row" style={{ padding: '0.25rem 0' }}>
-								<input
-									type="checkbox"
-									checked={selectedActors.has(actor.id)}
-									onChange={() => toggleActor(actor.id)}
-								/>
+							<Checkbox
+								key={actor.id}
+								className="checkbox-row"
+								style={{ padding: '0.25rem 0' }}
+								isSelected={selectedActors.has(actor.id)}
+								onChange={() => toggleActor(actor.id)}
+							>
 								{actor.lastName}, {actor.firstName}
-							</label>
+							</Checkbox>
 						))}
 					</div>
 				</div>
@@ -102,9 +104,13 @@ export function ManualEntryPage() {
 						{message}
 					</div>
 				)}
-				<button className="btn btn--primary" type="submit" disabled={submitting || selectedActors.size === 0}>
+				<Button
+					variant="primary"
+					type="submit"
+					isDisabled={submitting || selectedActors.size === 0}
+				>
 					{submitting ? 'Submitting...' : 'Submit sign-ins'}
-				</button>
+				</Button>
 			</form>
 		</div>
 	);

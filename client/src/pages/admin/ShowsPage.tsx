@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { formatShowTime, toLocalDateStr } from '../../lib/dateUtils';
+import { Button, TextFieldInput } from '../../components/ui';
 
 function QRCodeIcon() {
 	return (
@@ -154,27 +155,27 @@ export function ShowsPage() {
 				className="toolbar no-print"
 				style={{ marginBottom: '1rem' }}
 			>
-				<label className="field">
-					<span className="field-label">Date</span>
-					<input
-						type="date"
-						value={form.date}
-						onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field">
-					<span className="field-label">Time</span>
-					<input
-						type="time"
-						value={form.showTime}
-						onChange={(e) => setForm((p) => ({ ...p, showTime: e.target.value }))}
-						required
-					/>
-				</label>
-				<button className="btn btn--primary btn--sm" type="submit">
+				<TextFieldInput
+					label="Date"
+					value={form.date}
+					onChange={(value) => setForm((p) => ({ ...p, date: value }))}
+					isRequired
+					inputProps={{ type: 'date' }}
+				/>
+				<TextFieldInput
+					label="Time"
+					value={form.showTime}
+					onChange={(value) => setForm((p) => ({ ...p, showTime: value }))}
+					isRequired
+					inputProps={{ type: 'time' }}
+				/>
+				<Button
+					variant="primary"
+					size="sm"
+					type="submit"
+				>
 					Add show
-				</button>
+				</Button>
 			</form>
 
 			<div className="table-wrap">
@@ -205,19 +206,19 @@ export function ShowsPage() {
 									{isEditing ? (
 										<>
 											<td>
-												<input
-													type="date"
-													value={editForm.date}
-													onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))}
+												<TextFieldInput
 													aria-label="Date"
+													value={editForm.date}
+													onChange={(value) => setEditForm((p) => ({ ...p, date: value }))}
+													inputProps={{ type: 'date' }}
 												/>
 											</td>
 											<td>
-												<input
-													type="time"
-													value={editForm.showTime}
-													onChange={(e) => setEditForm((p) => ({ ...p, showTime: e.target.value }))}
+												<TextFieldInput
 													aria-label="Time"
+													value={editForm.showTime}
+													onChange={(value) => setEditForm((p) => ({ ...p, showTime: value }))}
+													inputProps={{ type: 'time' }}
 												/>
 											</td>
 											<td
@@ -230,16 +231,21 @@ export function ShowsPage() {
 													justifyContent: 'flex-end',
 												}}
 											>
-												<button
-													className="btn btn--sm btn--primary"
+												<Button
+													size="sm"
+													variant="primary"
 													type="button"
-													onClick={() => handleSaveEdit(show.id)}
+													onPress={() => handleSaveEdit(show.id)}
 												>
 													Save
-												</button>
-												<button className="btn btn--sm" type="button" onClick={cancelEdit}>
+												</Button>
+												<Button
+													size="sm"
+													type="button"
+													onPress={cancelEdit}
+												>
 													Cancel
-												</button>
+												</Button>
 											</td>
 										</>
 									) : (
@@ -256,13 +262,14 @@ export function ShowsPage() {
 													justifyContent: 'flex-end',
 												}}
 											>
-												<button
-													className="btn btn--sm btn--ghost"
+												<Button
+													size="sm"
+													variant="ghost"
 													type="button"
-													onClick={() => startEdit(show)}
+													onPress={() => startEdit(show)}
 												>
 													Edit
-												</button>
+												</Button>
 												{show.activeAt ? (
 													<>
 														<Link
@@ -273,29 +280,31 @@ export function ShowsPage() {
 														>
 															<QRCodeIcon />
 														</Link>
-														<button
-															className="btn btn--sm"
-															onClick={() => handleCloseSignIn(show.id)}
+														<Button
+															size="sm"
+															onPress={() => handleCloseSignIn(show.id)}
 														>
 															Close sign-in
-														</button>
+														</Button>
 													</>
 												) : (
 													<>
 														{!currentShow && show.id === nextEligibleShowId ? (
-															<button
-																className="btn btn--sm btn--primary"
-																onClick={() => handleActivate(show.id)}
+															<Button
+																size="sm"
+																variant="primary"
+																onPress={() => handleActivate(show.id)}
 															>
 																Open sign-in
-															</button>
+															</Button>
 														) : null}
-														<button
-															className="btn btn--sm btn--danger"
-															onClick={() => handleDelete(show.id)}
+														<Button
+															size="sm"
+															variant="danger"
+															onPress={() => handleDelete(show.id)}
 														>
 															Delete
-														</button>
+														</Button>
 													</>
 												)}
 											</td>

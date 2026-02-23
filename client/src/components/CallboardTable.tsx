@@ -1,6 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import {
+	Button,
+	Menu,
+	MenuItem,
+	MenuTrigger,
+	Popover,
+} from 'react-aria-components';
 import { formatShowTime } from '../lib/dateUtils';
 import { StatusIcon, statusLabels } from './StatusIcon';
 
@@ -56,155 +61,64 @@ function StatusSelect({
 	value: AttendanceRecord['status'] | null;
 	onChange: (status: AttendanceRecord['status'] | null) => void;
 }) {
-	const [open, setOpen] = useState(false);
-	const [popoverRect, setPopoverRect] = useState<{ top: number; left: number } | null>(null);
-	const buttonRef = useRef<HTMLButtonElement>(null);
-	const popoverRef = useRef<HTMLUListElement>(null);
-
-	useEffect(() => {
-		function handleClickOutside(e: MouseEvent) {
-			const target = e.target as Node;
-			if (buttonRef.current?.contains(target) || popoverRef.current?.contains(target)) {
-				return;
-			}
-			setOpen(false);
-		}
-		function handleScroll() {
-			setOpen(false);
-		}
-		document.addEventListener('mousedown', handleClickOutside);
-		window.addEventListener('scroll', handleScroll, true);
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-			window.removeEventListener('scroll', handleScroll, true);
-		};
-	}, []);
-
-	useEffect(() => {
-		if (open && buttonRef.current) {
-			const rect = buttonRef.current.getBoundingClientRect();
-			const popoverHeight = 48;
-			const spaceBelow = window.innerHeight - rect.bottom;
-			const showAbove = spaceBelow < popoverHeight && rect.top > popoverHeight;
-
-			setPopoverRect({
-				left: rect.left,
-				top: showAbove ? rect.top - popoverHeight : rect.bottom,
-			});
-		} else {
-			setPopoverRect(null);
-		}
-	}, [open]);
-
-	function handleKeyDown(e: React.KeyboardEvent) {
-		if (e.key === 'Escape') setOpen(false);
-	}
-
 	return (
-		<div style={{ display: 'inline-block' }} onKeyDown={handleKeyDown}>
-			<button
-				ref={buttonRef}
+		<MenuTrigger>
+			<Button
 				type="button"
-				onClick={() => setOpen((o) => !o)}
-				aria-haspopup="listbox"
-				aria-expanded={open}
+				className="status-select__trigger"
 				aria-label={value ? `Status: ${statusLabels[value]}` : 'Set status'}
-				style={{
-					border: 'none',
-					background: 'transparent',
-					boxShadow: 'none',
-					color: value ? statusColors[value] : 'var(--text-muted)',
-					cursor: 'pointer',
-					padding: '2px',
-					display: 'inline-flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-				}}
 			>
 				{value ? (
 					<StatusIcon status={value} color={statusColors[value]} />
 				) : (
-					<span aria-hidden style={{ fontSize: '0.9rem' }}>
+					<span
+						aria-hidden
+						style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}
+					>
 						—
 					</span>
 				)}
-			</button>
-			{open &&
-				popoverRect &&
-				createPortal(
-					<ul
-						ref={popoverRef}
-						role="listbox"
-						aria-label="Attendance status"
-						style={{
-							position: 'fixed',
-							top: popoverRect.top,
-							left: popoverRect.left,
-							margin: 0,
-							padding: '4px',
-							listStyle: 'none',
-							background: 'var(--bg-elevated)',
-							border: '1px solid var(--border)',
-							borderRadius: '6px',
-							boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-							zIndex: 9999,
-							display: 'flex',
-							gap: '2px',
-						}}
-					>
-						{value !== null && (
-							<li role="option" aria-selected={false}>
-								<button
-									type="button"
-									onClick={() => {
-										onChange(null);
-										setOpen(false);
-									}}
-									aria-label="Clear status"
-									style={{
-										border: 'none',
-										background: 'transparent',
-										boxShadow: 'none',
-										color: 'var(--text-muted)',
-										cursor: 'pointer',
-										padding: '6px',
-										borderRadius: '4px',
-										display: 'inline-flex',
-										fontSize: '0.85rem',
-									}}
-								>
-									Clear
-								</button>
-							</li>
-						)}
-						{STATUS_OPTIONS.map((opt) => (
-							<li key={opt.value} role="option" aria-selected={value === opt.value}>
-								<button
-									type="button"
-									onClick={() => {
-										onChange(opt.value);
-										setOpen(false);
-									}}
-									aria-label={statusLabels[opt.value]}
-									style={{
-										border: 'none',
-										background: value === opt.value ? 'var(--bg-hover)' : 'transparent',
-										boxShadow: 'none',
-										color: statusColors[opt.value],
-										cursor: 'pointer',
-										padding: '6px',
-										borderRadius: '4px',
-										display: 'inline-flex',
-									}}
-								>
-									<StatusIcon status={opt.value} color={statusColors[opt.value]} />
-								</button>
-							</li>
-						))}
-					</ul>,
-					document.body,
-				)}
-		</div>
+			</Button>
+			<Popover
+				offset={6}
+				className="status-select__popover"
+			>
+				<Menu
+					aria-label="Attendance status"
+					className="status-select__menu"
+					onAction={(key) => {
+						if (key === 'clear') {
+							onChange(null);
+							return;
+						}
+						if (typeof key === 'string' && key in statusLabels) {
+							onChange(key as AttendanceRecord['status']);
+						}
+					}}
+					selectedKeys={value ? [value] : []}
+					selectionMode="single"
+				>
+					{value !== null && (
+						<MenuItem
+							id="clear"
+							className="status-select__item status-select__item--clear"
+						>
+							Clear
+						</MenuItem>
+					)}
+					{STATUS_OPTIONS.map((opt) => (
+						<MenuItem
+							key={opt.value}
+							id={opt.value}
+							aria-label={statusLabels[opt.value]}
+							className="status-select__item"
+						>
+							<StatusIcon status={opt.value} color={statusColors[opt.value]} />
+						</MenuItem>
+					))}
+				</Menu>
+			</Popover>
+		</MenuTrigger>
 	);
 }
 

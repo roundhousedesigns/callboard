@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
+import { Button } from '../../components/ui';
 
 export function AdminLayout() {
 	const { user, logout } = useAuth();
@@ -93,9 +94,13 @@ export function AdminLayout() {
 						</span>
 					</nav>
 					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-						<button className="btn btn--sm btn--ghost" onClick={() => void handleLogout()}>
+						<Button
+							size="sm"
+							variant="ghost"
+							onPress={() => void handleLogout()}
+						>
 							Log out
-						</button>
+						</Button>
 					</div>
 				</div>
 			</header>

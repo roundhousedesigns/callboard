@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
+import { Button, TextFieldInput } from '../../components/ui';
 
 export function ActorsPage() {
 	const [actors, setActors] = useState<User[]>([]);
@@ -96,47 +97,48 @@ export function ActorsPage() {
 				className="toolbar no-print"
 				style={{ marginBottom: '1rem' }}
 			>
-				<label className="field">
-					<span className="field-label">First name</span>
-					<input
-						placeholder="First name"
-						value={form.firstName}
-						onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field">
-					<span className="field-label">Last name</span>
-					<input
-						placeholder="Last name"
-						value={form.lastName}
-						onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field" style={{ minWidth: '16rem' }}>
-					<span className="field-label">Email</span>
-					<input
-						type="email"
-						placeholder="Email"
-						value={form.email}
-						onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-						required
-					/>
-				</label>
-				<label className="field">
-					<span className="field-label">Password</span>
-					<input
-						type="password"
-						placeholder="Password"
-						value={form.password}
-						onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-						required
-					/>
-				</label>
-				<button className="btn btn--sm btn--primary" type="submit">
+				<TextFieldInput
+					label="First name"
+					value={form.firstName}
+					onChange={(value) => setForm((p) => ({ ...p, firstName: value }))}
+					isRequired
+					inputProps={{ placeholder: 'First name' }}
+				/>
+				<TextFieldInput
+					label="Last name"
+					value={form.lastName}
+					onChange={(value) => setForm((p) => ({ ...p, lastName: value }))}
+					isRequired
+					inputProps={{ placeholder: 'Last name' }}
+				/>
+				<TextFieldInput
+					label="Email"
+					value={form.email}
+					onChange={(value) => setForm((p) => ({ ...p, email: value }))}
+					isRequired
+					style={{ minWidth: '16rem' }}
+					inputProps={{
+						type: 'email',
+						placeholder: 'Email',
+					}}
+				/>
+				<TextFieldInput
+					label="Password"
+					value={form.password}
+					onChange={(value) => setForm((p) => ({ ...p, password: value }))}
+					isRequired
+					inputProps={{
+						type: 'password',
+						placeholder: 'Password',
+					}}
+				/>
+				<Button
+					size="sm"
+					variant="primary"
+					type="submit"
+				>
 					Add actor
-				</button>
+				</Button>
 			</form>
 			<div className="table-wrap">
 				<table>
@@ -154,47 +156,55 @@ export function ActorsPage() {
 									<>
 										<td>
 											<div className="stack" style={{ gap: '0.5rem' }}>
-												<input
+												<TextFieldInput
+													aria-label="First name"
 													value={editForm.firstName}
-													onChange={(e) =>
-														setEditForm((p) => ({ ...p, firstName: e.target.value }))
-													}
-													placeholder="First name"
+													onChange={(value) => setEditForm((p) => ({ ...p, firstName: value }))}
+													inputProps={{ placeholder: 'First name' }}
 												/>
-												<input
+												<TextFieldInput
+													aria-label="Last name"
 													value={editForm.lastName}
-													onChange={(e) =>
-														setEditForm((p) => ({ ...p, lastName: e.target.value }))
-													}
-													placeholder="Last name"
+													onChange={(value) => setEditForm((p) => ({ ...p, lastName: value }))}
+													inputProps={{ placeholder: 'Last name' }}
 												/>
 											</div>
 										</td>
 										<td>
 											<div className="stack" style={{ gap: '0.5rem' }}>
-												<input
-													type="email"
+												<TextFieldInput
+													aria-label="Email"
 													value={editForm.email}
-													onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+													onChange={(value) => setEditForm((p) => ({ ...p, email: value }))}
+													inputProps={{ type: 'email' }}
 												/>
-												<input
-													type="password"
+												<TextFieldInput
+													aria-label="New password"
 													value={editForm.password}
-													onChange={(e) =>
-														setEditForm((p) => ({ ...p, password: e.target.value }))
-													}
-													placeholder="New password (optional)"
+													onChange={(value) => setEditForm((p) => ({ ...p, password: value }))}
+													inputProps={{
+														type: 'password',
+														placeholder: 'New password (optional)',
+													}}
 												/>
 											</div>
 										</td>
 										<td className="no-print">
 											<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-												<button className="btn btn--sm btn--primary" onClick={() => handleUpdate(actor.id)}>
+												<Button
+													size="sm"
+													variant="primary"
+													onPress={() => handleUpdate(actor.id)}
+												>
 													Save
-												</button>
-												<button className="btn btn--sm btn--ghost" onClick={() => setEditing(null)}>
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onPress={() => setEditing(null)}
+												>
 													Cancel
-												</button>
+												</Button>
 											</div>
 										</td>
 									</>
@@ -206,12 +216,19 @@ export function ActorsPage() {
 										<td>{actor.email}</td>
 										<td className="no-print">
 											<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-												<button className="btn btn--sm" onClick={() => startEdit(actor)}>
+												<Button
+													size="sm"
+													onPress={() => startEdit(actor)}
+												>
 													Edit
-												</button>
-												<button className="btn btn--sm btn--danger" onClick={() => handleDelete(actor.id)}>
+												</Button>
+												<Button
+													size="sm"
+													variant="danger"
+													onPress={() => handleDelete(actor.id)}
+												>
 													Delete
-												</button>
+												</Button>
 											</div>
 										</td>
 									</>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
@@ -6,6 +7,7 @@ import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
 import { toLocalDateStr } from '../../lib/dateUtils';
 import { db } from '../../lib/offlineDb';
+import { Button, TextFieldInput } from '../../components/ui';
 
 export function OfflinePrintSheetPage() {
 	const { user } = useAuth();
@@ -164,29 +166,33 @@ export function OfflinePrintSheetPage() {
 			</p>
 			<div className="no-print" style={{ margin: '1rem 0' }}>
 				<div className="toolbar">
-					<label className="field">
-						<span className="field-label">Start</span>
-						<input
-							type="date"
-							value={dateRange.start}
-							onChange={(e) => setDateRange((p) => ({ ...p, start: e.target.value }))}
-						/>
-					</label>
-					<label className="field">
-						<span className="field-label">End</span>
-						<input
-							type="date"
-							value={dateRange.end}
-							onChange={(e) => setDateRange((p) => ({ ...p, end: e.target.value }))}
-						/>
-					</label>
-					<button className="btn btn--sm btn--primary" onClick={handlePrint}>
+					<TextFieldInput
+						label="Start"
+						value={dateRange.start}
+						onChange={(value) => setDateRange((p) => ({ ...p, start: value }))}
+						inputProps={{ type: 'date' }}
+					/>
+					<TextFieldInput
+						label="End"
+						value={dateRange.end}
+						onChange={(value) => setDateRange((p) => ({ ...p, end: value }))}
+						inputProps={{ type: 'date' }}
+					/>
+					<Button
+						size="sm"
+						variant="primary"
+						type="button"
+						onPress={handlePrint}
+					>
 						Print sheet
-					</button>
+					</Button>
 					{online && (
-						<a className="btn btn--sm btn--ghost" href="/admin/manual-entry">
+						<Link
+							className="btn btn--sm btn--ghost"
+							to="/admin/manual-entry"
+						>
 							Enter manual sign-ins
-						</a>
+						</Link>
 					)}
 				</div>
 			</div>
