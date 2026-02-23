@@ -149,13 +149,17 @@ export function CallboardPage() {
 					<TextFieldInput
 						label="Start"
 						value={dateRange.start}
-						onChange={(value) => setDateRange((p) => ({ ...p, start: value }))}
+						onChange={(value) => {
+							setDateRange((p) => ({ ...p, start: value }));
+						}}
 						inputProps={{ type: 'date' }}
 					/>
 					<TextFieldInput
 						label="End"
 						value={dateRange.end}
-						onChange={(value) => setDateRange((p) => ({ ...p, end: value }))}
+						onChange={(value) => {
+							setDateRange((p) => ({ ...p, end: value }));
+						}}
 						inputProps={{ type: 'date' }}
 					/>
 					<Button

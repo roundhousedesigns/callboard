@@ -92,7 +92,9 @@ export function ManualEntryPage() {
 								className="checkbox-row"
 								style={{ padding: '0.25rem 0' }}
 								isSelected={selectedActors.has(actor.id)}
-								onChange={() => toggleActor(actor.id)}
+								onChange={() => {
+									toggleActor(actor.id);
+								}}
 							>
 								{actor.lastName}, {actor.firstName}
 							</Checkbox>

@@ -40,11 +40,11 @@ export function QRDisplayPage() {
 					<h2 style={{ color: isNoActive ? 'var(--text-muted)' : 'var(--error)', margin: 0 }}>
 						{isNoActive ? 'No active show' : error}
 					</h2>
-				{isNoActive && (
-					<p className="muted" style={{ margin: 0 }}>
-						Open sign-in for a show from the Shows page to display the QR code.
-					</p>
-				)}
+					{isNoActive && (
+						<p className="muted" style={{ margin: 0 }}>
+							Open sign-in for a show from the Shows page to display the QR code.
+						</p>
+					)}
 					<Button
 						className="no-print"
 						variant="primary"
@@ -90,14 +90,16 @@ export function QRDisplayPage() {
 				<div>
 					<h1 className="auth-title">Scan to sign in</h1>
 					<p className="auth-subtitle">
-				{new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
+						{new Date(show.date).toLocaleDateString()} — {formatShowTime(show.showTime)}
 					</p>
 				</div>
 				<Button
 					className="no-print"
 					variant="primary"
 					type="button"
-					onPress={() => window.print()}
+					onPress={() => {
+						window.print();
+					}}
 				>
 					Print QR sheet
 				</Button>

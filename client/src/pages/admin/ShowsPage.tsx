@@ -158,14 +158,18 @@ export function ShowsPage() {
 				<TextFieldInput
 					label="Date"
 					value={form.date}
-					onChange={(value) => setForm((p) => ({ ...p, date: value }))}
+					onChange={(value) => {
+						setForm((p) => ({ ...p, date: value }));
+					}}
 					isRequired
 					inputProps={{ type: 'date' }}
 				/>
 				<TextFieldInput
 					label="Time"
 					value={form.showTime}
-					onChange={(value) => setForm((p) => ({ ...p, showTime: value }))}
+					onChange={(value) => {
+						setForm((p) => ({ ...p, showTime: value }));
+					}}
 					isRequired
 					inputProps={{ type: 'time' }}
 				/>
@@ -209,7 +213,9 @@ export function ShowsPage() {
 												<TextFieldInput
 													aria-label="Date"
 													value={editForm.date}
-													onChange={(value) => setEditForm((p) => ({ ...p, date: value }))}
+													onChange={(value) => {
+														setEditForm((p) => ({ ...p, date: value }));
+													}}
 													inputProps={{ type: 'date' }}
 												/>
 											</td>
@@ -217,7 +223,9 @@ export function ShowsPage() {
 												<TextFieldInput
 													aria-label="Time"
 													value={editForm.showTime}
-													onChange={(value) => setEditForm((p) => ({ ...p, showTime: value }))}
+													onChange={(value) => {
+														setEditForm((p) => ({ ...p, showTime: value }));
+													}}
 													inputProps={{ type: 'time' }}
 												/>
 											</td>
@@ -235,7 +243,9 @@ export function ShowsPage() {
 													size="sm"
 													variant="primary"
 													type="button"
-													onPress={() => handleSaveEdit(show.id)}
+													onPress={() => {
+														void handleSaveEdit(show.id);
+													}}
 												>
 													Save
 												</Button>
@@ -266,7 +276,9 @@ export function ShowsPage() {
 													size="sm"
 													variant="ghost"
 													type="button"
-													onPress={() => startEdit(show)}
+													onPress={() => {
+														startEdit(show);
+													}}
 												>
 													Edit
 												</Button>
@@ -282,7 +294,9 @@ export function ShowsPage() {
 														</Link>
 														<Button
 															size="sm"
-															onPress={() => handleCloseSignIn(show.id)}
+															onPress={() => {
+																void handleCloseSignIn(show.id);
+															}}
 														>
 															Close sign-in
 														</Button>
@@ -293,7 +307,9 @@ export function ShowsPage() {
 															<Button
 																size="sm"
 																variant="primary"
-																onPress={() => handleActivate(show.id)}
+																onPress={() => {
+																	void handleActivate(show.id);
+																}}
 															>
 																Open sign-in
 															</Button>
@@ -301,7 +317,9 @@ export function ShowsPage() {
 														<Button
 															size="sm"
 															variant="danger"
-															onPress={() => handleDelete(show.id)}
+															onPress={() => {
+																void handleDelete(show.id);
+															}}
 														>
 															Delete
 														</Button>

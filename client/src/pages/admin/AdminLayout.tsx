@@ -97,7 +97,9 @@ export function AdminLayout() {
 						<Button
 							size="sm"
 							variant="ghost"
-							onPress={() => void handleLogout()}
+							onPress={() => {
+								void handleLogout();
+							}}
 						>
 							Log out
 						</Button>

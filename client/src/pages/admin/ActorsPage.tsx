@@ -100,21 +100,27 @@ export function ActorsPage() {
 				<TextFieldInput
 					label="First name"
 					value={form.firstName}
-					onChange={(value) => setForm((p) => ({ ...p, firstName: value }))}
+					onChange={(value) => {
+						setForm((p) => ({ ...p, firstName: value }));
+					}}
 					isRequired
 					inputProps={{ placeholder: 'First name' }}
 				/>
 				<TextFieldInput
 					label="Last name"
 					value={form.lastName}
-					onChange={(value) => setForm((p) => ({ ...p, lastName: value }))}
+					onChange={(value) => {
+						setForm((p) => ({ ...p, lastName: value }));
+					}}
 					isRequired
 					inputProps={{ placeholder: 'Last name' }}
 				/>
 				<TextFieldInput
 					label="Email"
 					value={form.email}
-					onChange={(value) => setForm((p) => ({ ...p, email: value }))}
+					onChange={(value) => {
+						setForm((p) => ({ ...p, email: value }));
+					}}
 					isRequired
 					style={{ minWidth: '16rem' }}
 					inputProps={{
@@ -125,7 +131,9 @@ export function ActorsPage() {
 				<TextFieldInput
 					label="Password"
 					value={form.password}
-					onChange={(value) => setForm((p) => ({ ...p, password: value }))}
+					onChange={(value) => {
+						setForm((p) => ({ ...p, password: value }));
+					}}
 					isRequired
 					inputProps={{
 						type: 'password',
@@ -159,13 +167,17 @@ export function ActorsPage() {
 												<TextFieldInput
 													aria-label="First name"
 													value={editForm.firstName}
-													onChange={(value) => setEditForm((p) => ({ ...p, firstName: value }))}
+													onChange={(value) => {
+														setEditForm((p) => ({ ...p, firstName: value }));
+													}}
 													inputProps={{ placeholder: 'First name' }}
 												/>
 												<TextFieldInput
 													aria-label="Last name"
 													value={editForm.lastName}
-													onChange={(value) => setEditForm((p) => ({ ...p, lastName: value }))}
+													onChange={(value) => {
+														setEditForm((p) => ({ ...p, lastName: value }));
+													}}
 													inputProps={{ placeholder: 'Last name' }}
 												/>
 											</div>
@@ -175,13 +187,17 @@ export function ActorsPage() {
 												<TextFieldInput
 													aria-label="Email"
 													value={editForm.email}
-													onChange={(value) => setEditForm((p) => ({ ...p, email: value }))}
+													onChange={(value) => {
+														setEditForm((p) => ({ ...p, email: value }));
+													}}
 													inputProps={{ type: 'email' }}
 												/>
 												<TextFieldInput
 													aria-label="New password"
 													value={editForm.password}
-													onChange={(value) => setEditForm((p) => ({ ...p, password: value }))}
+													onChange={(value) => {
+														setEditForm((p) => ({ ...p, password: value }));
+													}}
 													inputProps={{
 														type: 'password',
 														placeholder: 'New password (optional)',
@@ -194,14 +210,18 @@ export function ActorsPage() {
 												<Button
 													size="sm"
 													variant="primary"
-													onPress={() => handleUpdate(actor.id)}
+													onPress={() => {
+														void handleUpdate(actor.id);
+													}}
 												>
 													Save
 												</Button>
 												<Button
 													size="sm"
 													variant="ghost"
-													onPress={() => setEditing(null)}
+													onPress={() => {
+														setEditing(null);
+													}}
 												>
 													Cancel
 												</Button>
@@ -218,14 +238,18 @@ export function ActorsPage() {
 											<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
 												<Button
 													size="sm"
-													onPress={() => startEdit(actor)}
+													onPress={() => {
+														startEdit(actor);
+													}}
 												>
 													Edit
 												</Button>
 												<Button
 													size="sm"
 													variant="danger"
-													onPress={() => handleDelete(actor.id)}
+													onPress={() => {
+														void handleDelete(actor.id);
+													}}
 												>
 													Delete
 												</Button>

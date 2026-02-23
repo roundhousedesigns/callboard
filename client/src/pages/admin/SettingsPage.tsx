@@ -146,7 +146,9 @@ export function SettingsPage() {
 						<SelectField
 							label="Week starts on"
 							selectedKey={String(weekStartsOn)}
-							onSelectionChange={(key) => setWeekStartsOn(Number(key))}
+							onSelectionChange={(key) => {
+								setWeekStartsOn(Number(key));
+							}}
 							options={WEEKDAY_OPTIONS.map((opt) => ({
 								id: String(opt.value),
 								label: opt.label,
