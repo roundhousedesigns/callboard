@@ -140,7 +140,7 @@ export function CallboardTable({
 
 	return (
 		<Card elevation={Elevation.ONE} className="table-card">
-			<HTMLTable bordered striped interactive condensed className="callboard-table">
+			<HTMLTable bordered striped interactive className="callboard-table">
 				<thead>
 					<tr>
 						<th style={{ minWidth: '180px' }}>Actor</th>

@@ -189,7 +189,7 @@ export function ShowsPage() {
 			</Card>
 
 			<Card className="table-card">
-				<HTMLTable bordered striped interactive condensed className="admin-table">
+				<HTMLTable bordered striped interactive className="admin-table">
 					<thead>
 						<tr>
 							<th>Date</th>
