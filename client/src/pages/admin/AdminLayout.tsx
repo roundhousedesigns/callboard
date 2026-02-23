@@ -1,5 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth';
+import { api } from '../../lib/api';
 
 function QRCodeIcon() {
 	return (
@@ -28,11 +30,46 @@ function QRCodeIcon() {
 export function AdminLayout() {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
+	const [hasActiveShow, setHasActiveShow] = useState(false);
 
 	async function handleLogout() {
 		await logout();
 		navigate('/login');
 	}
+
+	useEffect(() => {
+		let cancelled = false;
+
+		const check = async () => {
+			try {
+				await api.get('/shows/active');
+				if (!cancelled) setHasActiveShow(true);
+			} catch (err) {
+				if (!cancelled) setHasActiveShow(false);
+			}
+		};
+
+		void check();
+
+		const interval = window.setInterval(() => {
+			if (document.visibilityState === 'visible') {
+				void check();
+			}
+		}, 30000);
+
+		const onVisibilityChange = () => {
+			if (document.visibilityState === 'visible') {
+				void check();
+			}
+		};
+		document.addEventListener('visibilitychange', onVisibilityChange);
+
+		return () => {
+			cancelled = true;
+			window.clearInterval(interval);
+			document.removeEventListener('visibilitychange', onVisibilityChange);
+		};
+	}, []);
 
 	return (
 		<div className="app-shell">
@@ -82,6 +119,11 @@ export function AdminLayout() {
 								title="Current QR code"
 							>
 								<QRCodeIcon />
+							</NavLink>
+						)}
+						{hasActiveShow && (
+							<NavLink to="/admin/current-show" className="btn btn--sm btn--ghost">
+								Current show
 							</NavLink>
 						)}
 						<span className="badge">

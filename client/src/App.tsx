@@ -3,6 +3,7 @@ import { useAuth } from './lib/auth';
 import { LoginPage } from './pages/LoginPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { CallboardPage } from './pages/admin/CallboardPage';
+import { CurrentShowPage } from './pages/admin/CurrentShowPage';
 import { ActorsPage } from './pages/admin/ActorsPage';
 import { ShowsPage } from './pages/admin/ShowsPage';
 import { QRDisplayPage } from './pages/admin/QRDisplayPage';
@@ -51,6 +52,7 @@ export default function App() {
 				}
 			>
 				<Route index element={<CallboardPage />} />
+				<Route path="current-show" element={<CurrentShowPage />} />
 				<Route path="actors" element={<ActorsPage />} />
 				<Route path="shows" element={<ShowsPage />} />
 				<Route path="qr" element={<QRDisplayPage />} />
