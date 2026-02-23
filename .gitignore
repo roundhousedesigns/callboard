@@ -1,5 +1,6 @@
 .env
 node_modules
+.worktrees/
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
