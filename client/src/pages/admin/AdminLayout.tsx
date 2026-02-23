@@ -49,16 +49,16 @@ export function AdminLayout() {
 							Callboard
 						</NavLink>
 						<NavLink
-							to="/admin/actors"
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Actors
-						</NavLink>
-						<NavLink
 							to="/admin/shows"
 							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
 						>
 							Shows
+						</NavLink>
+						<NavLink
+							to="/admin/actors"
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							Actors
 						</NavLink>
 						<NavLink
 							to="/admin/offline"
@@ -87,7 +87,7 @@ export function AdminLayout() {
 						<span className="badge">
 							{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
 						</span>
-						<button className="btn btn--sm btn--ghost" onClick={handleLogout}>
+						<button className="btn btn--sm btn--ghost" onClick={() => void handleLogout()}>
 							Log out
 						</button>
 					</div>
