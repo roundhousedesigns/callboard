@@ -301,20 +301,14 @@ router.post("/:id/activate", async (req, res) => {
     return;
   }
 
-  const upcoming = await prisma.show.findMany({
-    where: { organizationId: orgId, lockedAt: null },
+  const candidates = await prisma.show.findMany({
+    where: { organizationId: orgId, lockedAt: null, activeAt: null },
     orderBy: [{ date: "asc" }, { showTime: "asc" }],
   });
-  const now = new Date();
-  const nextUpcoming = upcoming.find((s) => {
-    const dt = new Date(s.date);
-    const [h, m] = s.showTime.split(":").map(Number);
-    dt.setHours(h, m || 0, 0, 0);
-    return dt > now;
-  });
-  if (!nextUpcoming || nextUpcoming.id !== req.params.id) {
+  const nextEligible = candidates[0] ?? null;
+  if (!nextEligible || nextEligible.id !== req.params.id) {
     res.status(400).json({
-      error: "Only the next upcoming show can be opened for sign-in",
+      error: "Only the next eligible show can be opened for sign-in",
     });
     return;
   }

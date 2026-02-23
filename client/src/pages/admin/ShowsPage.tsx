@@ -125,26 +125,19 @@ export function ShowsPage() {
 		}
 	}
 
-	const now = Date.now();
 	const currentShow = shows.find((s) => !!s.activeAt) ?? null;
-	const upcomingShows = shows
-		.filter((s) => {
-			if (s.activeAt || s.lockedAt) return false;
-			const dt = new Date(s.date);
-			const [h, m] = s.showTime.split(':').map(Number);
-			dt.setHours(h, m || 0, 0, 0);
-			return dt.getTime() > now;
-		})
+	const eligibleShows = shows
+		.filter((s) => !s.activeAt && !s.lockedAt)
 		.sort(
 			(a, b) =>
 				new Date(a.date).getTime() - new Date(b.date).getTime() ||
 				a.showTime.localeCompare(b.showTime),
 		);
-	const nextUpcomingShowId = upcomingShows[0]?.id ?? null;
+	const nextEligibleShowId = eligibleShows[0]?.id ?? null;
 	const displayShows = currentShow
-		? [currentShow, ...upcomingShows]
-		: upcomingShows;
-	const highlightedShowId = currentShow?.id ?? nextUpcomingShowId;
+		? [currentShow, ...eligibleShows]
+		: eligibleShows;
+	const highlightedShowId = currentShow?.id ?? nextEligibleShowId;
 
 	if (loading) return <div className="muted">Loading...</div>;
 
@@ -289,7 +282,7 @@ export function ShowsPage() {
 													</>
 												) : (
 													<>
-														{!currentShow && show.id === nextUpcomingShowId ? (
+														{!currentShow && show.id === nextEligibleShowId ? (
 															<button
 																className="btn btn--sm btn--primary"
 																onClick={() => handleActivate(show.id)}
