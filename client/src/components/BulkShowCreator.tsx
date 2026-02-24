@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogTrigger, Modal, ModalOverlay } from 'react-aria-components';
 import { api } from '../lib/api';
 import { formatShowTime } from '../lib/dateUtils';
@@ -36,6 +36,25 @@ function createEmptyWeekdayTimes(): Record<string, string[]> {
 	}, {});
 }
 
+function getTimeSlot(times: string[] | undefined, index: number): string {
+	return times?.[index] ?? '';
+}
+
+function setTimeSlot(times: string[] | undefined, index: number, value: string): string[] {
+	const next = [...(times ?? [])];
+	while (next.length <= index) next.push('');
+	next[index] = value;
+	return next;
+}
+
+function removeTimeSlot(times: string[] | undefined, index: number): string[] {
+	return (times ?? []).filter((_, i) => i !== index);
+}
+
+function getTimeInputId(weekdayKey: string, index: number): string {
+	return `bulk-show-creator-${weekdayKey}-time-${index}`;
+}
+
 export function BulkShowCreator({
 	onCreated,
 	triggerLabel = 'Bulk create shows',
@@ -51,24 +70,43 @@ export function BulkShowCreator({
 	const [error, setError] = useState<string | null>(null);
 	const [result, setResult] = useState<BulkShowResult | null>(null);
 
-	function addTime(weekdayKey: string) {
-		setWeekdayTimes((prev) => ({
-			...prev,
-			[weekdayKey]: [...(prev[weekdayKey] ?? []), ''],
-		}));
+	const focusTargetRef = useRef<{ weekdayKey: string; index: number } | null>(null);
+
+	useEffect(() => {
+		const target = focusTargetRef.current;
+		if (!target) return;
+		const el = document.getElementById(getTimeInputId(target.weekdayKey, target.index));
+		if (el instanceof HTMLInputElement) el.focus();
+		focusTargetRef.current = null;
+	}, [weekdayTimes]);
+
+	function addExtraTime(weekdayKey: string) {
+		setWeekdayTimes((prev) => {
+			const current = prev[weekdayKey] ?? [];
+			const nextIndex = Math.max(2, current.length);
+			const nextTimes = [...current];
+			while (nextTimes.length <= nextIndex) nextTimes.push('');
+
+			focusTargetRef.current = { weekdayKey, index: nextIndex };
+			return { ...prev, [weekdayKey]: nextTimes };
+		});
+	}
+
+	function clearAllTimes() {
+		setWeekdayTimes(createEmptyWeekdayTimes());
 	}
 
 	function removeTime(weekdayKey: string, index: number) {
 		setWeekdayTimes((prev) => ({
 			...prev,
-			[weekdayKey]: (prev[weekdayKey] ?? []).filter((_, i) => i !== index),
+			[weekdayKey]: removeTimeSlot(prev[weekdayKey], index),
 		}));
 	}
 
 	function updateTime(weekdayKey: string, index: number, value: string) {
 		setWeekdayTimes((prev) => ({
 			...prev,
-			[weekdayKey]: (prev[weekdayKey] ?? []).map((time, i) => (i === index ? value : time)),
+			[weekdayKey]: setTimeSlot(prev[weekdayKey], index, value),
 		}));
 	}
 
@@ -170,70 +208,135 @@ export function BulkShowCreator({
 									</div>
 
 									<div className="stack">
+										<div
+											style={{
+												display: 'flex',
+												alignItems: 'baseline',
+												justifyContent: 'space-between',
+												gap: '0.75rem',
+												flexWrap: 'wrap',
+											}}
+										>
+											<div>
+												<strong>Showtimes</strong>
+												<p className="muted" style={{ margin: '0.25rem 0 0 0' }}>
+													Enter up to two times per weekday. Add more if needed.
+												</p>
+											</div>
+											<Button
+												type="button"
+												size="sm"
+												variant="ghost"
+												onPress={clearAllTimes}
+											>
+												Clear all times
+											</Button>
+										</div>
 										{WEEKDAYS.map((weekday) => {
 											const times = weekdayTimes[weekday.key] ?? [];
+											const extraTimes = times.slice(2);
+											const lastVisibleIndex = Math.max(1, times.length - 1);
+
+											function handleTimeKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
+												if (e.key !== 'Enter') return;
+												if (index !== lastVisibleIndex) return;
+												e.preventDefault();
+												addExtraTime(weekday.key);
+											}
+
 											return (
 												<div key={weekday.key} className="field">
 													<div
 														style={{
 															display: 'flex',
 															alignItems: 'center',
-															justifyContent: 'flex-start',
+															justifyContent: 'space-between',
 															gap: '0.75rem',
-															flexWrap: 'nowrap',
+															flexWrap: 'wrap',
 														}}
 													>
 														<strong>{weekday.label}</strong>
-														<Button
-															type="button"
-															size="sm"
-															onPress={() => {
-																addTime(weekday.key);
-															}}
-														>
-															Add showtime
+														<Button type="button" size="sm" onPress={() => addExtraTime(weekday.key)}>
+															+ Add time
 														</Button>
 													</div>
-													{times.length === 0 ? (
-														<p className="muted" style={{ marginTop: '0.35rem' }}>
-															No shows
-														</p>
-													) : (
+													<div
+														style={{
+															display: 'flex',
+															alignItems: 'flex-end',
+															gap: '0.5rem',
+															flexWrap: 'wrap',
+															marginTop: '0.5rem',
+														}}
+													>
+														<div style={{ width: '12rem' }}>
+															<TextFieldInput
+																label="Time 1"
+																aria-label={`${weekday.label} — Time 1`}
+																value={getTimeSlot(times, 0)}
+																onChange={(value) => updateTime(weekday.key, 0, value)}
+																inputProps={{
+																	type: 'time',
+																	id: getTimeInputId(weekday.key, 0),
+																	onKeyDown: (e) => handleTimeKeyDown(0, e),
+																}}
+															/>
+														</div>
+														<div style={{ width: '12rem' }}>
+															<TextFieldInput
+																label="Time 2"
+																aria-label={`${weekday.label} — Time 2`}
+																value={getTimeSlot(times, 1)}
+																onChange={(value) => updateTime(weekday.key, 1, value)}
+																inputProps={{
+																	type: 'time',
+																	id: getTimeInputId(weekday.key, 1),
+																	onKeyDown: (e) => handleTimeKeyDown(1, e),
+																}}
+															/>
+														</div>
+													</div>
+
+													{extraTimes.length > 0 ? (
 														<div className="stack" style={{ marginTop: '0.5rem', gap: '0.5rem' }}>
-															{times.map((time, index) => (
-																<div
-																	key={`${weekday.key}-${index}`}
-																	style={{
-																		display: 'flex',
-																		alignItems: 'flex-end',
-																		gap: '0.5rem',
-																		flexWrap: 'wrap',
-																	}}
-																>
-																	<div style={{ width: '12rem' }}>
-																		<TextFieldInput
-																			label={`Time ${index + 1}`}
-																			value={time}
-																			onChange={(value) => {
-																				updateTime(weekday.key, index, value);
-																			}}
-																			inputProps={{ type: 'time' }}
-																		/>
-																	</div>
-																	<Button
-																		type="button"
-																		size="sm"
-																		variant="danger"
-																		onPress={() => {
-																			removeTime(weekday.key, index);
+															{extraTimes.map((time, offset) => {
+																const index = offset + 2;
+																return (
+																	<div
+																		key={`${weekday.key}-${index}`}
+																		style={{
+																			display: 'flex',
+																			alignItems: 'flex-end',
+																			gap: '0.5rem',
+																			flexWrap: 'wrap',
 																		}}
 																	>
-																		Remove
-																	</Button>
-																</div>
-															))}
+																		<div style={{ width: '12rem' }}>
+																			<TextFieldInput
+																				label={`Time ${index + 1}`}
+																				aria-label={`${weekday.label} — Time ${index + 1}`}
+																				value={time}
+																				onChange={(value) => updateTime(weekday.key, index, value)}
+																				inputProps={{
+																					type: 'time',
+																					id: getTimeInputId(weekday.key, index),
+																					onKeyDown: (e) => handleTimeKeyDown(index, e),
+																				}}
+																			/>
+																		</div>
+																		<Button
+																			type="button"
+																			size="sm"
+																			variant="danger"
+																			onPress={() => removeTime(weekday.key, index)}
+																		>
+																			Remove
+																		</Button>
+																	</div>
+																);
+															})}
 														</div>
-													)}
+													) : null}
 												</div>
 											);
 										})}
