@@ -183,15 +183,17 @@ export function SettingsPage() {
 
 			<h2 style={{ marginBottom: '0.5rem' }}>Import Performance Calendar</h2>
 			<p className="muted" style={{ marginBottom: '1rem' }}>
-				Upload a CSV or Excel file with columns <code>date</code> (YYYY-MM-DD) and{' '}
-				<code>showTime</code>, or <code>time</code>. Accepts 24h (14:00), 12h (2:00 PM).
+				Upload a CSV (<code>.csv</code>) with headers. Required columns: <code>date</code> (YYYY-MM-DD)
+				and <code>showTime</code> (or <code>time</code>). Time accepts 24h <code>HH:mm</code> (or{' '}
+				<code>HH:mm:ss</code>) or 12h with AM/PM (e.g. <code>2:00 PM</code>). Also accepts{' '}
+				<code>matinee</code>, <code>evening</code>, <code>noon</code>, <code>midnight</code>.
 			</p>
 			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
 				<form onSubmit={handleImportSubmit} className="stack">
 					<div className="stack" style={{ gap: '0.4rem' }}>
 						<FileTrigger
 							key={fileTriggerKey}
-							acceptedFileTypes={['.csv', '.xlsx', '.xls']}
+							acceptedFileTypes={['.csv']}
 							onSelect={(files) => {
 								const next = files ? Array.from(files)[0] ?? null : null;
 								setImportFile(next);
