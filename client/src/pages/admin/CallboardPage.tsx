@@ -38,13 +38,16 @@ export function CallboardPage() {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [dateRange, setDateRange] = useState({ start: '', end: '' });
+	const [draftRange, setDraftRange] = useState({ start: '', end: '' });
 	const hasLoadedOnceRef = useRef(false);
 
 	const showsPerWeek = 8;
 	const weekStartsOn = user?.organization?.weekStartsOn ?? 0;
 
 	useEffect(() => {
-		setDateRange(getThisWeekRange(weekStartsOn));
+		const thisWeek = getThisWeekRange(weekStartsOn);
+		setDateRange(thisWeek);
+		setDraftRange(thisWeek);
 	}, [weekStartsOn]);
 
 	const loadData = async (showLoading = true) => {
@@ -131,7 +134,9 @@ export function CallboardPage() {
 	}
 
 	function setThisWeek() {
-		setDateRange(getThisWeekRange(weekStartsOn));
+		const thisWeek = getThisWeekRange(weekStartsOn);
+		setDateRange(thisWeek);
+		setDraftRange(thisWeek);
 	}
 
 	function shiftWeek(deltaWeeks: number) {
@@ -141,10 +146,17 @@ export function CallboardPage() {
 		const { start: weekStart } = getWeekBoundsWithStart(reference, weekStartsOn);
 		const end = new Date(weekStart);
 		end.setDate(end.getDate() + 6);
-		setDateRange({
+		const nextRange = {
 			start: toLocalDateStr(weekStart),
 			end: toLocalDateStr(end),
-		});
+		};
+		setDateRange(nextRange);
+		setDraftRange(nextRange);
+	}
+
+	function applyDraftRange() {
+		if (!draftRange.start || !draftRange.end) return;
+		setDateRange({ start: draftRange.start, end: draftRange.end });
 	}
 
 	function handlePrint() {
@@ -153,6 +165,8 @@ export function CallboardPage() {
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
+
+	const isDraftDirty = draftRange.start !== dateRange.start || draftRange.end !== dateRange.end;
 
 	return (
 		<div>
@@ -187,20 +201,29 @@ export function CallboardPage() {
 					</Button>
 					<TextFieldInput
 						label="Start"
-						value={dateRange.start}
+						value={draftRange.start}
 						onChange={(value) => {
-							setDateRange((p) => ({ ...p, start: value }));
+							setDraftRange((p) => ({ ...p, start: value }));
 						}}
 						inputProps={{ type: 'date' }}
 					/>
 					<TextFieldInput
 						label="End"
-						value={dateRange.end}
+						value={draftRange.end}
 						onChange={(value) => {
-							setDateRange((p) => ({ ...p, end: value }));
+							setDraftRange((p) => ({ ...p, end: value }));
 						}}
 						inputProps={{ type: 'date' }}
 					/>
+					<Button
+						size="sm"
+						variant="primary"
+						type="button"
+						onPress={applyDraftRange}
+						isDisabled={!draftRange.start || !draftRange.end || !isDraftDirty || refreshing || loading}
+					>
+						Apply range
+					</Button>
 					<Button
 						size="sm"
 						type="button"

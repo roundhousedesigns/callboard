@@ -1,15 +1,15 @@
 ---
-description: Project overview and context for Callboard
-globs:
+description: 
 alwaysApply: true
 ---
+
 # Callboard
 
 A webapp for professional theatre companies to manage actor attendance. Replaces physical sign-in sheets with QR code sign-in, admin controls, and offline support.
 
 ## Tech Stack
 
-- **Frontend**: React + Vite (in `client/`)
+- **Frontend**: React + Vite (in `client/`) + [React Aria](https://react-aria.adobe.com)
 - **Backend**: Express API (in `server/`)
 - **Database**: PostgreSQL with Prisma ORM (schema in `prisma/`)
 - **Package Manager**: Yarn (workspaces for client and server)

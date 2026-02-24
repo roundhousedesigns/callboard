@@ -301,6 +301,12 @@ tbody tr:hover {
 	gap: 0.35rem;
 }
 
+/* Bulk show creator weekday header row (e.g., "Sunday" + "Add time") */
+.app-main .container .card.card--flat form.stack .field > div:has(> strong):has(> button) {
+	justify-content: flex-start;
+	flex-wrap: nowrap;
+}
+
 .field--inline {
 	display: flex;
 	gap: 0.5rem;
