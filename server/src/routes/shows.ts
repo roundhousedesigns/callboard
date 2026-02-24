@@ -109,6 +109,8 @@ router.get("/", async (req, res) => {
   const start = req.query.start as string | undefined;
   const end = req.query.end as string | undefined;
 
+  await deleteExpiredShowsWithoutAttendance(orgId);
+
   const where: { organizationId: string; date?: { gte?: Date; lte?: Date } } = {
     organizationId: orgId,
   };
@@ -417,10 +419,21 @@ router.post("/:id/activate", async (req, res) => {
     where: { organizationId: orgId, lockedAt: null, activeAt: null },
     orderBy: [{ date: "asc" }, { showTime: "asc" }],
   });
-  const nextEligible = candidates[0] ?? null;
-  if (!nextEligible || nextEligible.id !== req.params.id) {
+
+  const nowMs = Date.now();
+  const nextUpcoming =
+    candidates.length > 0
+      ? candidates.reduce<{ id: string; whenMs: number } | null>((best, s) => {
+          const whenMs = getShowDateTimeMs(s.date, s.showTime);
+          if (whenMs < nowMs) return best;
+          if (!best || whenMs < best.whenMs) return { id: s.id, whenMs };
+          return best;
+        }, null)
+      : null;
+
+  if (!nextUpcoming || nextUpcoming.id !== req.params.id) {
     res.status(400).json({
-      error: "Only the next eligible show can be opened for sign-in",
+      error: "Only the next upcoming show can be opened for sign-in",
     });
     return;
   }

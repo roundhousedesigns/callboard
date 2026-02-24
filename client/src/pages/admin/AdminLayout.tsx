@@ -84,16 +84,20 @@ export function AdminLayout() {
 						>
 							Settings
 						</NavLink>
+
 						{hasActiveShow && (
-							<NavLink to="/admin/current-show">
+							<NavLink
+								to="/admin/current-show"
+								className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+							>
 								Current show
 							</NavLink>
 						)}
+					</nav>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
 						<span className="badge">
 							{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
 						</span>
-					</nav>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
 						<Button
 							size="sm"
 							variant="ghost"

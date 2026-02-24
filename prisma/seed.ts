@@ -9,6 +9,15 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+function getWeekStart(d: Date, weekStartsOn: number): Date {
+  const start = new Date(d);
+  const day = start.getDay(); // 0=Sun..6=Sat (local)
+  const diff = (day - weekStartsOn + 7) % 7;
+  start.setDate(start.getDate() - diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
 async function main() {
   const org = await prisma.organization.upsert({
     where: { slug: "demo-theatre" },
@@ -16,6 +25,7 @@ async function main() {
     create: {
       name: "Demo Theatre Company",
       slug: "demo-theatre",
+      weekStartsOn: 2,
     },
   });
 
@@ -60,6 +70,11 @@ async function main() {
   // Keep demo users, but start with an empty show schedule.
   await prisma.show.deleteMany({
     where: { organizationId: org.id },
+  });
+
+  await prisma.show.createMany({
+    data: showData,
+    skipDuplicates: true,
   });
 
   console.log("Seed complete.");

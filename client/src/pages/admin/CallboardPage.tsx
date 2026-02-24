@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
@@ -25,6 +25,11 @@ function getThisWeekRange(weekStartsOn: number) {
 	};
 }
 
+function fromLocalDateStr(yyyyMmDd: string): Date {
+	const [y, m, d] = yyyyMmDd.split('-').map(Number);
+	return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
 export function CallboardPage() {
 	const { user } = useAuth();
 	const [actors, setActors] = useState<User[]>([]);
@@ -33,17 +38,22 @@ export function CallboardPage() {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [dateRange, setDateRange] = useState({ start: '', end: '' });
+	const [draftRange, setDraftRange] = useState({ start: '', end: '' });
+	const hasLoadedOnceRef = useRef(false);
 
 	const showsPerWeek = 8;
 	const weekStartsOn = user?.organization?.weekStartsOn ?? 0;
 
 	useEffect(() => {
-		setDateRange(getThisWeekRange(weekStartsOn));
+		const thisWeek = getThisWeekRange(weekStartsOn);
+		setDateRange(thisWeek);
+		setDraftRange(thisWeek);
 	}, [weekStartsOn]);
 
 	const loadData = async (showLoading = true) => {
 		if (!dateRange.start) return;
-		if (showLoading) setLoading(true);
+		const useFullLoading = showLoading && !hasLoadedOnceRef.current;
+		if (useFullLoading) setLoading(true);
 		else setRefreshing(true);
 		try {
 			const [usersRes, showsRes] = await Promise.all([
@@ -80,13 +90,14 @@ export function CallboardPage() {
 		} catch (err) {
 			console.error(err);
 		} finally {
+			hasLoadedOnceRef.current = true;
 			setLoading(false);
 			setRefreshing(false);
 		}
 	};
 
 	useEffect(() => {
-		loadData();
+		void loadData(true);
 	}, [dateRange.start, dateRange.end]);
 
 	useEffect(() => {
@@ -96,7 +107,9 @@ export function CallboardPage() {
 				loadData(false);
 			}
 		}, 30000);
-		return () => clearInterval(interval);
+		return () => {
+			clearInterval(interval);
+		};
 	}, [dateRange.start, dateRange.end]);
 
 	async function handleSetStatus(
@@ -121,17 +134,39 @@ export function CallboardPage() {
 	}
 
 	function setThisWeek() {
-		setDateRange(getThisWeekRange(weekStartsOn));
+		const thisWeek = getThisWeekRange(weekStartsOn);
+		setDateRange(thisWeek);
+		setDraftRange(thisWeek);
+	}
+
+	function shiftWeek(deltaWeeks: number) {
+		if (!dateRange.start) return;
+		const reference = fromLocalDateStr(dateRange.start);
+		reference.setDate(reference.getDate() + deltaWeeks * 7);
+		const { start: weekStart } = getWeekBoundsWithStart(reference, weekStartsOn);
+		const end = new Date(weekStart);
+		end.setDate(end.getDate() + 6);
+		const nextRange = {
+			start: toLocalDateStr(weekStart),
+			end: toLocalDateStr(end),
+		};
+		setDateRange(nextRange);
+		setDraftRange(nextRange);
+	}
+
+	function applyDraftRange() {
+		if (!draftRange.start || !draftRange.end) return;
+		setDateRange({ start: draftRange.start, end: draftRange.end });
 	}
 
 	function handlePrint() {
 		window.print();
 	}
 
-	if (loading) return <div className="muted">Loading...</div>;
-
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
+
+	const isDraftDirty = draftRange.start !== dateRange.start || draftRange.end !== dateRange.end;
 
 	return (
 		<div>
@@ -146,22 +181,49 @@ export function CallboardPage() {
 				style={{ marginBottom: '1rem' }}
 			>
 				<div className="toolbar">
+					<Button
+						size="sm"
+						variant="ghost"
+						type="button"
+						onPress={() => shiftWeek(-1)}
+						isDisabled={refreshing || loading}
+					>
+						Previous week
+					</Button>
+					<Button
+						size="sm"
+						variant="ghost"
+						type="button"
+						onPress={() => shiftWeek(1)}
+						isDisabled={refreshing || loading}
+					>
+						Next week
+					</Button>
 					<TextFieldInput
 						label="Start"
-						value={dateRange.start}
+						value={draftRange.start}
 						onChange={(value) => {
-							setDateRange((p) => ({ ...p, start: value }));
+							setDraftRange((p) => ({ ...p, start: value }));
 						}}
 						inputProps={{ type: 'date' }}
 					/>
 					<TextFieldInput
 						label="End"
-						value={dateRange.end}
+						value={draftRange.end}
 						onChange={(value) => {
-							setDateRange((p) => ({ ...p, end: value }));
+							setDraftRange((p) => ({ ...p, end: value }));
 						}}
 						inputProps={{ type: 'date' }}
 					/>
+					<Button
+						size="sm"
+						variant="primary"
+						type="button"
+						onPress={applyDraftRange}
+						isDisabled={!draftRange.start || !draftRange.end || !isDraftDirty || refreshing || loading}
+					>
+						Apply range
+					</Button>
 					<Button
 						size="sm"
 						type="button"
@@ -190,6 +252,7 @@ export function CallboardPage() {
 					</Button>
 				</div>
 			</div>
+			{loading && <div className="muted">Loading...</div>}
 			<CallboardTable
 				actors={actors}
 				shows={shows}

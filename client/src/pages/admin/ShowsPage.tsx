@@ -44,16 +44,17 @@ export function ShowsPage() {
 	const [form, setForm] = useState({ date: '', showTime: '' });
 	const [editingShowId, setEditingShowId] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState({ date: '', showTime: '' });
-
-	const loadShows = useCallback(async () => {
-		try {
-			const nextShows = await api.get<Show[]>('/shows');
-			setShows(nextShows);
-		} catch (err) {
-			console.error(err);
-		} finally {
-			setLoading(false);
-		}
+	useEffect(() => {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const todayStr = toLocalDateStr(today);
+		api
+			.get<Show[]>(`/shows?start=${todayStr}`)
+			.then(setShows)
+			.catch(console.error)
+			.finally(() => {
+				setLoading(false);
+			});
 	}, []);
 
 	useEffect(() => {
