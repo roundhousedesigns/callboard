@@ -44,11 +44,16 @@ export function ShowsPage() {
 	const [editingShowId, setEditingShowId] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState({ date: '', showTime: '' });
 	useEffect(() => {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		const todayStr = toLocalDateStr(today);
 		api
-			.get<Show[]>('/shows')
+			.get<Show[]>(`/shows?start=${todayStr}`)
 			.then(setShows)
 			.catch(console.error)
-			.finally(() => setLoading(false));
+			.finally(() => {
+				setLoading(false);
+			});
 	}, []);
 
 	async function handleCreate(e: React.FormEvent) {

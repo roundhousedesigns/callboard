@@ -80,10 +80,57 @@ const updateShowSchema = z.object({
   showTime: showTimeSchema.optional(),
 });
 
+function getLocalDateFromPrismaDateOnly(d: Date): Date {
+  // Prisma returns @db.Date as a JS Date at UTC midnight.
+  // Construct a local date at midnight using UTC Y/M/D so date-only values don't shift by timezone.
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+}
+
+function getShowDateTimeMs(showDate: Date, showTime: string): number {
+  const [h, m] = showTime.split(":").map(Number);
+  const d = getLocalDateFromPrismaDateOnly(showDate);
+  d.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0, 0, 0);
+  return d.getTime();
+}
+
+async function deleteExpiredShowsWithoutAttendance(orgId: string): Promise<void> {
+  // Grace period to avoid breaking offline/manual entry workflows.
+  const GRACE_MS = 36 * 60 * 60 * 1000;
+  const cutoffMs = Date.now() - GRACE_MS;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const candidates = await prisma.show.findMany({
+    where: {
+      organizationId: orgId,
+      date: { lte: today },
+    },
+    select: {
+      id: true,
+      date: true,
+      showTime: true,
+      _count: { select: { attendance: true } },
+    },
+  });
+
+  const idsToDelete = candidates
+    .filter((s) => s._count.attendance === 0 && getShowDateTimeMs(s.date, s.showTime) < cutoffMs)
+    .map((s) => s.id);
+
+  if (idsToDelete.length === 0) return;
+
+  await prisma.show.deleteMany({
+    where: { id: { in: idsToDelete } },
+  });
+}
+
 router.get("/", async (req, res) => {
   const orgId = req.user!.organizationId;
   const start = req.query.start as string | undefined;
   const end = req.query.end as string | undefined;
+
+  await deleteExpiredShowsWithoutAttendance(orgId);
 
   const where: { organizationId: string; date?: { gte?: Date; lte?: Date } } = {
     organizationId: orgId,
@@ -305,10 +352,21 @@ router.post("/:id/activate", async (req, res) => {
     where: { organizationId: orgId, lockedAt: null, activeAt: null },
     orderBy: [{ date: "asc" }, { showTime: "asc" }],
   });
-  const nextEligible = candidates[0] ?? null;
-  if (!nextEligible || nextEligible.id !== req.params.id) {
+
+  const nowMs = Date.now();
+  const nextUpcoming =
+    candidates.length > 0
+      ? candidates.reduce<{ id: string; whenMs: number } | null>((best, s) => {
+          const whenMs = getShowDateTimeMs(s.date, s.showTime);
+          if (whenMs < nowMs) return best;
+          if (!best || whenMs < best.whenMs) return { id: s.id, whenMs };
+          return best;
+        }, null)
+      : null;
+
+  if (!nextUpcoming || nextUpcoming.id !== req.params.id) {
     res.status(400).json({
-      error: "Only the next eligible show can be opened for sign-in",
+      error: "Only the next upcoming show can be opened for sign-in",
     });
     return;
   }

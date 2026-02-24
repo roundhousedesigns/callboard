@@ -9,6 +9,15 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+function getWeekStart(d: Date, weekStartsOn: number): Date {
+  const start = new Date(d);
+  const day = start.getDay(); // 0=Sun..6=Sat (local)
+  const diff = (day - weekStartsOn + 7) % 7;
+  start.setDate(start.getDate() - diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
 async function main() {
   const org = await prisma.organization.upsert({
     where: { slug: "demo-theatre" },
@@ -16,6 +25,7 @@ async function main() {
     create: {
       name: "Demo Theatre Company",
       slug: "demo-theatre",
+      weekStartsOn: 2,
     },
   });
 
@@ -57,46 +67,36 @@ async function main() {
     });
   }
 
-  // 3 weeks of shows, starting with the current week (Sun–Sat, matching app's getWeekBounds)
+  // Demo database: safe to wipe + recreate show data.
+  // Populate with ~1 year of upcoming dummy shows so the UI always has data.
+  await prisma.show.deleteMany({ where: { organizationId: org.id } });
+
   const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  weekStart.setHours(0, 0, 0, 0);
+  const weekStartsOn = org.weekStartsOn ?? 0;
+  const startDate = getWeekStart(now, weekStartsOn);
 
-  const showSlots: Array<{ dayOffset: number; time: string }> = [
-    { dayOffset: 0, time: "14:00" },   // Sun matinee
-    { dayOffset: 1, time: "19:00" },   // Mon
-    { dayOffset: 2, time: "19:00" },   // Tue
-    { dayOffset: 3, time: "19:00" },   // Wed
-    { dayOffset: 4, time: "19:00" },   // Thu
-    { dayOffset: 5, time: "19:00" },   // Fri
-    { dayOffset: 6, time: "14:00" },   // Sat matinee
-    { dayOffset: 6, time: "19:00" },   // Sat evening
-  ];
+  const oneYearDays = 365 + 7; // include the whole current week
+  const showData: Array<{ organizationId: string; date: Date; showTime: string }> = [];
 
-  for (let week = 0; week < 3; week++) {
-    const weekDate = new Date(weekStart);
-    weekDate.setDate(weekStart.getDate() + week * 7);
-    for (const slot of showSlots) {
-      const showDate = new Date(weekDate);
-      showDate.setDate(weekDate.getDate() + slot.dayOffset);
-      await prisma.show.upsert({
-        where: {
-          organizationId_date_showTime: {
-            organizationId: org.id,
-            date: showDate,
-            showTime: slot.time,
-          },
-        },
-        update: {},
-        create: {
-          organizationId: org.id,
-          date: showDate,
-          showTime: slot.time,
-        },
-      });
+  for (let i = 0; i < oneYearDays; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+
+    const day = date.getDay(); // 0=Sun ... 6=Sat (local)
+
+    // Evening show most days.
+    showData.push({ organizationId: org.id, date, showTime: "19:00" });
+
+    // Weekend matinees (and keep Saturday evening too).
+    if (day === 0 || day === 6) {
+      showData.push({ organizationId: org.id, date, showTime: "14:00" });
     }
   }
+
+  await prisma.show.createMany({
+    data: showData,
+    skipDuplicates: true,
+  });
 
   console.log("Seed complete.");
   console.log("Admin: admin@demo.theatre / password123");

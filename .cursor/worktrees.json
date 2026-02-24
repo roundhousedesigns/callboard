@@ -1,0 +1,8 @@
+{
+  "setup-worktree": [
+    "cp $ROOT_WORKTREE_PATH/.env .env",
+    "yarn install",
+    "yarn setup",
+    "yarn build"
+  ]
+}

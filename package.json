@@ -6,6 +6,7 @@
     "server"
   ],
   "scripts": {
+    "setup": "yarn db:start && yarn db:push && yarn db:seed",
     "dev": "concurrently \"yarn dev:server\" \"yarn dev:client\"",
     "dev:host": "concurrently \"yarn dev:server\" \"yarn dev:client --host\"",
     "dev:client": "yarn workspace client dev",
