@@ -31,7 +31,7 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("password123", 12);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "admin@demo.theatre" },
     update: {},
     create: {
@@ -67,31 +67,10 @@ async function main() {
     });
   }
 
-  // Demo database: safe to wipe + recreate show data.
-  // Populate with ~1 year of upcoming dummy shows so the UI always has data.
-  await prisma.show.deleteMany({ where: { organizationId: org.id } });
-
-  const now = new Date();
-  const weekStartsOn = org.weekStartsOn ?? 0;
-  const startDate = getWeekStart(now, weekStartsOn);
-
-  const oneYearDays = 365 + 7; // include the whole current week
-  const showData: Array<{ organizationId: string; date: Date; showTime: string }> = [];
-
-  for (let i = 0; i < oneYearDays; i++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
-
-    const day = date.getDay(); // 0=Sun ... 6=Sat (local)
-
-    // Evening show most days.
-    showData.push({ organizationId: org.id, date, showTime: "19:00" });
-
-    // Weekend matinees (and keep Saturday evening too).
-    if (day === 0 || day === 6) {
-      showData.push({ organizationId: org.id, date, showTime: "14:00" });
-    }
-  }
+  // Keep demo users, but start with an empty show schedule.
+  await prisma.show.deleteMany({
+    where: { organizationId: org.id },
+  });
 
   await prisma.show.createMany({
     data: showData,
@@ -99,6 +78,7 @@ async function main() {
   });
 
   console.log("Seed complete.");
+  console.log("Removed all demo shows; none were seeded.");
   console.log("Admin: admin@demo.theatre / password123");
   console.log("Actors: alice.anderson@demo.theatre, bob.brown@demo.theatre, carol.clark@demo.theatre / password123");
 }

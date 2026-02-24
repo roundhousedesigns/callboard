@@ -75,54 +75,33 @@ const createShowSchema = z.object({
   showTime: showTimeSchema,
 });
 
+const bulkGenerateShowSchema = z.object({
+	startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+	endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+	weekdayTimes: z.record(z.string(), z.array(showTimeSchema)),
+	skipDuplicates: z.boolean().optional().default(true),
+});
+
 const updateShowSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   showTime: showTimeSchema.optional(),
 });
 
-function getLocalDateFromPrismaDateOnly(d: Date): Date {
-  // Prisma returns @db.Date as a JS Date at UTC midnight.
-  // Construct a local date at midnight using UTC Y/M/D so date-only values don't shift by timezone.
-  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+function parseDateOnly(dateStr: string): Date {
+	const [y, m, d] = dateStr.split("-").map((part) => parseInt(part, 10));
+	return new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
-function getShowDateTimeMs(showDate: Date, showTime: string): number {
-  const [h, m] = showTime.split(":").map(Number);
-  const d = getLocalDateFromPrismaDateOnly(showDate);
-  d.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0, 0, 0);
-  return d.getTime();
+function dayDiffInclusive(start: Date, end: Date): number {
+	const MS_PER_DAY = 24 * 60 * 60 * 1000;
+	return Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
 }
 
-async function deleteExpiredShowsWithoutAttendance(orgId: string): Promise<void> {
-  // Grace period to avoid breaking offline/manual entry workflows.
-  const GRACE_MS = 36 * 60 * 60 * 1000;
-  const cutoffMs = Date.now() - GRACE_MS;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const candidates = await prisma.show.findMany({
-    where: {
-      organizationId: orgId,
-      date: { lte: today },
-    },
-    select: {
-      id: true,
-      date: true,
-      showTime: true,
-      _count: { select: { attendance: true } },
-    },
-  });
-
-  const idsToDelete = candidates
-    .filter((s) => s._count.attendance === 0 && getShowDateTimeMs(s.date, s.showTime) < cutoffMs)
-    .map((s) => s.id);
-
-  if (idsToDelete.length === 0) return;
-
-  await prisma.show.deleteMany({
-    where: { id: { in: idsToDelete } },
-  });
+function formatDateOnly(date: Date): string {
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, "0");
+	const d = String(date.getDate()).padStart(2, "0");
+	return `${y}-${m}-${d}`;
 }
 
 router.get("/", async (req, res) => {
@@ -270,6 +249,94 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
     console.error(err);
     res.status(500).json({ error: "Import failed" });
   }
+});
+
+router.post("/bulk-generate", async (req, res) => {
+	try {
+		const data = bulkGenerateShowSchema.parse(req.body);
+		const orgId = req.user!.organizationId;
+
+		const start = parseDateOnly(data.startDate);
+		const end = parseDateOnly(data.endDate);
+		if (start.getTime() > end.getTime()) {
+			res.status(400).json({ error: "Start date must be on or before end date" });
+			return;
+		}
+
+		const maxSpanDays = 366;
+		const spanDays = dayDiffInclusive(start, end);
+		if (spanDays > maxSpanDays) {
+			res.status(400).json({ error: "Date range cannot exceed 1 year" });
+			return;
+		}
+
+		const weekdayTimes: Record<number, string[]> = {};
+		for (const [rawKey, rawTimes] of Object.entries(data.weekdayTimes)) {
+			if (!/^[0-6]$/.test(rawKey)) {
+				res.status(400).json({ error: "Weekday keys must be 0-6 (Sunday-Saturday)" });
+				return;
+			}
+			const key = Number(rawKey);
+			const normalizedUnique = Array.from(
+				new Set(rawTimes.map((time) => toHHmm(time))),
+			).sort((a, b) => a.localeCompare(b));
+			weekdayTimes[key] = normalizedUnique;
+		}
+
+		const created: { date: string; showTime: string }[] = [];
+		const skipped: { date: string; showTime: string }[] = [];
+
+		for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+			const weekday = d.getDay();
+			const times = weekdayTimes[weekday] ?? [];
+			if (times.length === 0) continue;
+
+			const date = new Date(d);
+			date.setHours(0, 0, 0, 0);
+			const dateLabel = formatDateOnly(date);
+
+			for (const showTime of times) {
+				const existing = await prisma.show.findUnique({
+					where: {
+						organizationId_date_showTime: {
+							organizationId: orgId,
+							date,
+							showTime,
+						},
+					},
+				});
+
+				if (existing) {
+					if (data.skipDuplicates) {
+						skipped.push({ date: dateLabel, showTime });
+						continue;
+					}
+				} else {
+					await prisma.show.create({
+						data: {
+							organizationId: orgId,
+							date,
+							showTime,
+						},
+					});
+					created.push({ date: dateLabel, showTime });
+				}
+			}
+		}
+
+		res.json({
+			createdCount: created.length,
+			skippedCount: skipped.length,
+			createdShows: created,
+			skippedShows: skipped,
+		});
+	} catch (err) {
+		if (err instanceof z.ZodError) {
+			res.status(400).json({ error: err.errors[0]?.message ?? "Invalid input" });
+			return;
+		}
+		throw err;
+	}
 });
 
 router.get("/active", async (req, res) => {
