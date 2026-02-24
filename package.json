@@ -5,6 +5,11 @@
     "client",
     "server"
   ],
+  "resolutions": {
+    "esbuild": "0.27.3",
+    "hono": "4.11.10",
+    "lodash": "4.17.23"
+  },
   "scripts": {
     "setup": "yarn db:start && yarn db:push && yarn db:seed",
     "dev": "concurrently \"yarn dev:server\" \"yarn dev:client\"",

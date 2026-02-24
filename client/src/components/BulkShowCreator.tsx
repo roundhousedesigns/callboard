@@ -178,9 +178,9 @@ export function BulkShowCreator({
 														style={{
 															display: 'flex',
 															alignItems: 'center',
-															justifyContent: 'space-between',
-															gap: '0.5rem',
-															flexWrap: 'wrap',
+															justifyContent: 'flex-start',
+															gap: '0.75rem',
+															flexWrap: 'nowrap',
 														}}
 													>
 														<strong>{weekday.label}</strong>
@@ -191,7 +191,7 @@ export function BulkShowCreator({
 																addTime(weekday.key);
 															}}
 														>
-															Add time
+															Add showtime
 														</Button>
 													</div>
 													{times.length === 0 ? (

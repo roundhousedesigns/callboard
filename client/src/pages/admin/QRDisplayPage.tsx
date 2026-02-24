@@ -20,8 +20,15 @@ export function QRDisplayPage() {
 	function loadActiveShow() {
 		setError(null);
 		api
-			.get<Show>('/shows/active')
-			.then(setShow)
+			.get<Show | null>('/shows/active')
+			.then((s) => {
+				if (!s) {
+					setShow(null);
+					setError('No active show');
+					return;
+				}
+				setShow(s);
+			})
 			.catch((err) => {
 				setError(err instanceof Error ? err.message : 'Failed');
 				setShow(null);

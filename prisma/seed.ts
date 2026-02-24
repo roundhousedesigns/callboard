@@ -73,7 +73,7 @@ async function main() {
   });
 
   await prisma.show.createMany({
-    data: showData,
+    data: [],
     skipDuplicates: true,
   });
 

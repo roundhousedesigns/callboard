@@ -14,7 +14,10 @@ export function CurrentShowPage() {
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
 
 	const load = useCallback(async (): Promise<CurrentShowCallboardData> => {
-		const show = await api.get<Show>('/shows/active');
+		const show = await api.get<Show | null>('/shows/active');
+		if (!show) {
+			throw new Error('No active show');
+		}
 		const users = await api.get<User[]>('/users');
 		const actors = users
 			.filter((u) => u.role === 'actor')

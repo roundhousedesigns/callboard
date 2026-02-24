@@ -19,8 +19,8 @@ export function AdminLayout() {
 
 		const check = async () => {
 			try {
-				await api.get('/shows/active');
-				if (!cancelled) setHasActiveShow(true);
+				const show = await api.get<{ id: string } | null>('/shows/active');
+				if (!cancelled) setHasActiveShow(Boolean(show));
 			} catch (err) {
 				if (!cancelled) setHasActiveShow(false);
 			}

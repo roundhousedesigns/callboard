@@ -4,10 +4,10 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import multer from "multer";
 import Papa from "papaparse";
-import * as XLSX from "xlsx";
 import { authMiddleware, adminOnly } from "../middleware/auth.js";
 
 const router = Router();
+type ShowCandidate = Awaited<ReturnType<typeof prisma.show.findMany>>[number];
 
 /** Normalize imported time to HH:mm. Handles 24h, 12h, legacy labels, Excel serial. */
 function normalizeShowTime(value: string | number | undefined): string | null {
@@ -104,6 +104,33 @@ function formatDateOnly(date: Date): string {
 	return `${y}-${m}-${d}`;
 }
 
+function getShowDateTimeMs(date: Date, showTime: string): number {
+	const m = showTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+	if (!m) return new Date(date).getTime();
+
+	const h = parseInt(m[1], 10);
+	const min = parseInt(m[2], 10);
+	const sec = m[3] ? parseInt(m[3], 10) : 0;
+
+	const dt = new Date(date);
+	dt.setHours(h, min, sec, 0);
+	return dt.getTime();
+}
+
+async function deleteExpiredShowsWithoutAttendance(organizationId: string): Promise<void> {
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+
+	await prisma.show.deleteMany({
+		where: {
+			organizationId,
+			activeAt: null,
+			date: { lt: today },
+			attendance: { none: {} },
+		},
+	});
+}
+
 router.get("/", async (req, res) => {
   const orgId = req.user!.organizationId;
   const start = req.query.start as string | undefined;
@@ -180,24 +207,9 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
           rows.push({ date: String(date).trim(), showTime });
         }
       }
-    } else if (ext.endsWith(".xlsx") || ext.endsWith(".xls")) {
-      const workbook = XLSX.read(file.buffer, { type: "buffer" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
-      for (const row of data) {
-        const date = row.date ?? row.Date ?? row.DATE;
-        const raw = row.showTime ?? row.show_time ?? row.ShowTime ?? row.time ?? row.Time ?? row.label ?? row.Label ?? row.name ?? row.Name;
-        const showTime = normalizeShowTime(raw as string | number | undefined);
-        if (date && showTime && SHOW_TIME_REGEX.test(showTime)) {
-          rows.push({
-            date: String(date).trim(),
-            showTime,
-          });
-        }
-      }
     } else {
       res.status(400).json({
-        error: "Unsupported format. Use CSV or Excel (.xlsx, .xls)",
+        error: "Unsupported format. Use CSV (.csv)",
       });
       return;
     }
@@ -340,16 +352,21 @@ router.post("/bulk-generate", async (req, res) => {
 });
 
 router.get("/active", async (req, res) => {
-  const orgId = req.user!.organizationId;
-  const show = await prisma.show.findFirst({
-    where: { organizationId: orgId, activeAt: { not: null } },
-    orderBy: { activeAt: "desc" },
-  });
-  if (!show) {
-    res.status(404).json({ error: "No active show" });
-    return;
-  }
-  res.json(show);
+	const orgId = req.user!.organizationId;
+	const show = await prisma.show.findFirst({
+		where: { organizationId: orgId, activeAt: { not: null } },
+		orderBy: { activeAt: "desc" },
+	});
+
+	// Returning 404 for "no active show" causes noisy periodic 404s in the UI,
+	// since the admin pages poll this endpoint. Treat "no active show" as an
+	// empty query result instead.
+	if (!show) {
+		res.json(null);
+		return;
+	}
+
+	res.json(show);
 });
 
 router.get("/:id", async (req, res) => {
@@ -415,7 +432,7 @@ router.post("/:id/activate", async (req, res) => {
     return;
   }
 
-  const candidates = await prisma.show.findMany({
+  const candidates: ShowCandidate[] = await prisma.show.findMany({
     where: { organizationId: orgId, lockedAt: null, activeAt: null },
     orderBy: [{ date: "asc" }, { showTime: "asc" }],
   });
