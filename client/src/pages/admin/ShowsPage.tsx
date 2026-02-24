@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { formatShowTime, toLocalDateStr } from '../../lib/dateUtils';
 import { Button, TextFieldInput } from '../../components/ui';
+import { BulkShowCreator } from '../../components/BulkShowCreator';
 
 function QRCodeIcon() {
 	return (
@@ -43,13 +44,21 @@ export function ShowsPage() {
 	const [form, setForm] = useState({ date: '', showTime: '' });
 	const [editingShowId, setEditingShowId] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState({ date: '', showTime: '' });
-	useEffect(() => {
-		api
-			.get<Show[]>('/shows')
-			.then(setShows)
-			.catch(console.error)
-			.finally(() => setLoading(false));
+
+	const loadShows = useCallback(async () => {
+		try {
+			const nextShows = await api.get<Show[]>('/shows');
+			setShows(nextShows);
+		} catch (err) {
+			console.error(err);
+		} finally {
+			setLoading(false);
+		}
 	}, []);
+
+	useEffect(() => {
+		void loadShows();
+	}, [loadShows]);
 
 	async function handleCreate(e: React.FormEvent) {
 		e.preventDefault();
@@ -149,6 +158,15 @@ export function ShowsPage() {
 					<h1 className="page-title">Shows</h1>
 					<p className="page-subtitle">Create upcoming shows and open sign-in.</p>
 				</div>
+				<div className="no-print">
+					<BulkShowCreator
+						triggerLabel="Bulk create schedule"
+						triggerVariant="primary"
+						onCreated={async () => {
+							await loadShows();
+						}}
+					/>
+				</div>
 			</div>
 			<form
 				onSubmit={handleCreate}
@@ -181,7 +199,6 @@ export function ShowsPage() {
 					Add show
 				</Button>
 			</form>
-
 			<div className="table-wrap">
 				<table>
 					<thead>

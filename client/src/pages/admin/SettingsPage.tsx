@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { formatShowTime } from '../../lib/dateUtils';
 import { Button, Checkbox, SelectField, TextFieldInput } from '../../components/ui';
+import { BulkShowCreator } from '../../components/BulkShowCreator';
 
 interface ImportResult {
 	createdCount: number;
@@ -123,6 +124,9 @@ export function SettingsPage() {
 				<div>
 					<h1 className="page-title">Settings</h1>
 					<p className="page-subtitle">Organization: {orgName}</p>
+				</div>
+				<div className="no-print">
+					<BulkShowCreator triggerLabel="Bulk create schedule" />
 				</div>
 			</div>
 			<div className="card card--flat" style={{ maxWidth: '34rem' }}>

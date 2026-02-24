@@ -21,7 +21,7 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("password123", 12);
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: "admin@demo.theatre" },
     update: {},
     create: {
@@ -57,48 +57,13 @@ async function main() {
     });
   }
 
-  // 3 weeks of shows, starting with the current week (Sun–Sat, matching app's getWeekBounds)
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-
-  const showSlots: Array<{ dayOffset: number; time: string }> = [
-    { dayOffset: 0, time: "14:00" },   // Sun matinee
-    { dayOffset: 1, time: "19:00" },   // Mon
-    { dayOffset: 2, time: "19:00" },   // Tue
-    { dayOffset: 3, time: "19:00" },   // Wed
-    { dayOffset: 4, time: "19:00" },   // Thu
-    { dayOffset: 5, time: "19:00" },   // Fri
-    { dayOffset: 6, time: "14:00" },   // Sat matinee
-    { dayOffset: 6, time: "19:00" },   // Sat evening
-  ];
-
-  for (let week = 0; week < 3; week++) {
-    const weekDate = new Date(weekStart);
-    weekDate.setDate(weekStart.getDate() + week * 7);
-    for (const slot of showSlots) {
-      const showDate = new Date(weekDate);
-      showDate.setDate(weekDate.getDate() + slot.dayOffset);
-      await prisma.show.upsert({
-        where: {
-          organizationId_date_showTime: {
-            organizationId: org.id,
-            date: showDate,
-            showTime: slot.time,
-          },
-        },
-        update: {},
-        create: {
-          organizationId: org.id,
-          date: showDate,
-          showTime: slot.time,
-        },
-      });
-    }
-  }
+  // Keep demo users, but start with an empty show schedule.
+  await prisma.show.deleteMany({
+    where: { organizationId: org.id },
+  });
 
   console.log("Seed complete.");
+  console.log("Removed all demo shows; none were seeded.");
   console.log("Admin: admin@demo.theatre / password123");
   console.log("Actors: alice.anderson@demo.theatre, bob.brown@demo.theatre, carol.clark@demo.theatre / password123");
 }
