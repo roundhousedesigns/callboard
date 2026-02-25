@@ -164,7 +164,7 @@ export function ShowsPage() {
 				</div>
 				<div className="no-print">
 					<BulkShowCreator
-						triggerLabel="Bulk create schedule"
+						triggerLabel="Build schedule"
 						triggerVariant="primary"
 						onCreated={async () => {
 							await loadShows();

@@ -66,6 +66,8 @@ export function BulkShowCreator({
 	const [weekdayTimes, setWeekdayTimes] = useState<Record<string, string[]>>(
 		createEmptyWeekdayTimes(),
 	);
+	const [quickTime1, setQuickTime1] = useState('');
+	const [quickTime2, setQuickTime2] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [result, setResult] = useState<BulkShowResult | null>(null);
@@ -94,6 +96,45 @@ export function BulkShowCreator({
 
 	function clearAllTimes() {
 		setWeekdayTimes(createEmptyWeekdayTimes());
+	}
+
+	function applyQuickTimes(target: 'all' | 'weekdays' | 'weekend') {
+		const times = [quickTime1.trim(), quickTime2.trim()].filter((time) => time.length > 0);
+		if (times.length === 0) return;
+
+		setWeekdayTimes((prev) => {
+			const next = { ...prev };
+			const targets =
+				target === 'weekdays'
+					? ['1', '2', '3', '4', '5']
+					: target === 'weekend'
+						? ['0', '6']
+						: WEEKDAYS.map((weekday) => weekday.key);
+
+			targets.forEach((weekdayKey) => {
+				next[weekdayKey] = [...times];
+			});
+
+			return next;
+		});
+	}
+
+	function copyTimesFromPreviousDay(weekdayIndex: number) {
+		if (weekdayIndex === 0) return;
+
+		const sourceKey = WEEKDAYS[weekdayIndex - 1].key;
+		const targetKey = WEEKDAYS[weekdayIndex].key;
+		setWeekdayTimes((prev) => ({
+			...prev,
+			[targetKey]: [...(prev[sourceKey] ?? [])],
+		}));
+	}
+
+	function clearDayTimes(weekdayKey: string) {
+		setWeekdayTimes((prev) => ({
+			...prev,
+			[weekdayKey]: [],
+		}));
 	}
 
 	function removeTime(weekdayKey: string, index: number) {
@@ -220,19 +261,55 @@ export function BulkShowCreator({
 											<div>
 												<strong>Showtimes</strong>
 												<p className="muted" style={{ margin: '0.25rem 0 0 0' }}>
-													Enter up to two times per weekday. Add more if needed.
+													Use quick fill, then tweak any individual day as needed.
 												</p>
 											</div>
-											<Button
-												type="button"
-												size="sm"
-												variant="ghost"
-												onPress={clearAllTimes}
-											>
+										</div>
+										<div
+											style={{
+												display: 'flex',
+												alignItems: 'flex-end',
+												gap: '0.5rem',
+												flexWrap: 'wrap',
+												padding: '0.65rem',
+												border: '1px solid var(--border)',
+												borderRadius: 'var(--radius-sm)',
+												background: 'var(--bg-elevated)',
+											}}
+										>
+											<div style={{ width: '11rem' }}>
+												<TextFieldInput
+													label="Quick time 1"
+													aria-label="Quick fill time 1"
+													value={quickTime1}
+													onChange={setQuickTime1}
+													inputProps={{ type: 'time' }}
+												/>
+											</div>
+											<div style={{ width: '11rem' }}>
+												<TextFieldInput
+													label="Quick time 2"
+													aria-label="Quick fill time 2"
+													value={quickTime2}
+													onChange={setQuickTime2}
+													inputProps={{ type: 'time' }}
+												/>
+											</div>
+											<Button type="button" size="sm" onPress={() => applyQuickTimes('weekdays')}>
+												Apply Mon-Fri
+											</Button>
+											<Button type="button" size="sm" onPress={() => applyQuickTimes('weekend')}>
+												Apply weekend
+											</Button>
+											<Button type="button" size="sm" onPress={() => applyQuickTimes('all')}>
+												Apply all days
+											</Button>
+											<Button type="button" size="sm" variant="ghost" onPress={clearAllTimes}>
 												Clear all times
 											</Button>
 										</div>
 										{WEEKDAYS.map((weekday) => {
+											const weekdayIndex = WEEKDAYS.findIndex((day) => day.key === weekday.key);
 											const times = weekdayTimes[weekday.key] ?? [];
 											const extraTimes = times.slice(2);
 											const lastVisibleIndex = Math.max(1, times.length - 1);
@@ -250,14 +327,31 @@ export function BulkShowCreator({
 														style={{
 															display: 'flex',
 															alignItems: 'center',
-															justifyContent: 'space-between',
+															justifyContent: 'flex-start',
 															gap: '0.75rem',
 															flexWrap: 'wrap',
 														}}
 													>
-														<strong>{weekday.label}</strong>
+														<strong style={{ minWidth: '6.5rem' }}>{weekday.label}</strong>
 														<Button type="button" size="sm" onPress={() => addExtraTime(weekday.key)}>
 															+ Add time
+														</Button>
+														<Button
+															type="button"
+															size="sm"
+															variant="ghost"
+															onPress={() => copyTimesFromPreviousDay(weekdayIndex)}
+															isDisabled={weekdayIndex === 0}
+														>
+															Copy previous day
+														</Button>
+														<Button
+															type="button"
+															size="sm"
+															variant="ghost"
+															onPress={() => clearDayTimes(weekday.key)}
+														>
+															Clear day
 														</Button>
 													</div>
 													<div

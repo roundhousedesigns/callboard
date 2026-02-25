@@ -126,7 +126,7 @@ export function SettingsPage() {
 					<p className="page-subtitle">Organization: {orgName}</p>
 				</div>
 				<div className="no-print">
-					<BulkShowCreator triggerLabel="Bulk create schedule" />
+					<BulkShowCreator triggerLabel="Build schedule" />
 				</div>
 			</div>
 			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
