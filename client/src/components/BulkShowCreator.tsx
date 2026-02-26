@@ -17,6 +17,7 @@ interface BulkShowCreatorProps {
 	triggerLabel?: string;
 	triggerVariant?: ButtonProps['variant'];
 	triggerSize?: ButtonProps['size'];
+	weekStartsOn?: number;
 }
 
 const WEEKDAYS: Array<{ key: string; label: string }> = [
@@ -28,6 +29,15 @@ const WEEKDAYS: Array<{ key: string; label: string }> = [
 	{ key: '5', label: 'Friday' },
 	{ key: '6', label: 'Saturday' },
 ];
+
+function normalizeWeekStart(value: number | undefined): number {
+	return Number.isInteger(value) && value !== undefined && value >= 0 && value <= 6 ? value : 0;
+}
+
+function getDisplayWeekdays(weekStartsOn: number | undefined): Array<{ key: string; label: string }> {
+	const start = normalizeWeekStart(weekStartsOn);
+	return [...WEEKDAYS.slice(start), ...WEEKDAYS.slice(0, start)];
+}
 
 function createEmptyWeekdayTimes(): Record<string, string[]> {
 	return WEEKDAYS.reduce<Record<string, string[]>>((acc, weekday) => {
@@ -60,6 +70,7 @@ export function BulkShowCreator({
 	triggerLabel = 'Bulk create shows',
 	triggerVariant = 'default',
 	triggerSize = 'sm',
+	weekStartsOn,
 }: BulkShowCreatorProps) {
 	const [startDate, setStartDate] = useState('');
 	const [endDate, setEndDate] = useState('');
@@ -73,6 +84,7 @@ export function BulkShowCreator({
 	const [result, setResult] = useState<BulkShowResult | null>(null);
 
 	const focusTargetRef = useRef<{ weekdayKey: string; index: number } | null>(null);
+	const displayWeekdays = getDisplayWeekdays(weekStartsOn);
 
 	useEffect(() => {
 		const target = focusTargetRef.current;
@@ -119,14 +131,13 @@ export function BulkShowCreator({
 		});
 	}
 
-	function copyTimesFromPreviousDay(weekdayIndex: number) {
-		if (weekdayIndex === 0) return;
+	function copyTimesFromPreviousDay(targetWeekdayKey: string, displayIndex: number) {
+		if (displayIndex === 0) return;
 
-		const sourceKey = WEEKDAYS[weekdayIndex - 1].key;
-		const targetKey = WEEKDAYS[weekdayIndex].key;
+		const sourceKey = displayWeekdays[displayIndex - 1].key;
 		setWeekdayTimes((prev) => ({
 			...prev,
-			[targetKey]: [...(prev[sourceKey] ?? [])],
+			[targetWeekdayKey]: [...(prev[sourceKey] ?? [])],
 		}));
 	}
 
@@ -308,8 +319,7 @@ export function BulkShowCreator({
 												Clear all times
 											</Button>
 										</div>
-										{WEEKDAYS.map((weekday) => {
-											const weekdayIndex = WEEKDAYS.findIndex((day) => day.key === weekday.key);
+										{displayWeekdays.map((weekday, weekdayIndex) => {
 											const times = weekdayTimes[weekday.key] ?? [];
 											const extraTimes = times.slice(2);
 											const lastVisibleIndex = Math.max(1, times.length - 1);
@@ -340,7 +350,7 @@ export function BulkShowCreator({
 															type="button"
 															size="sm"
 															variant="ghost"
-															onPress={() => copyTimesFromPreviousDay(weekdayIndex)}
+															onPress={() => copyTimesFromPreviousDay(weekday.key, weekdayIndex)}
 															isDisabled={weekdayIndex === 0}
 														>
 															Copy previous day
