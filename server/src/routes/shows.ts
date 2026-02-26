@@ -7,7 +7,6 @@ import Papa from "papaparse";
 import { authMiddleware, adminOnly } from "../middleware/auth.js";
 
 const router = Router();
-type ShowCandidate = Awaited<ReturnType<typeof prisma.show.findMany>>[number];
 
 /** Normalize imported time to HH:mm. Handles 24h, 12h, legacy labels, Excel serial. */
 function normalizeShowTime(value: string | number | undefined): string | null {
@@ -102,19 +101,6 @@ function formatDateOnly(date: Date): string {
 	const m = String(date.getMonth() + 1).padStart(2, "0");
 	const d = String(date.getDate()).padStart(2, "0");
 	return `${y}-${m}-${d}`;
-}
-
-function getShowDateTimeMs(date: Date, showTime: string): number {
-	const m = showTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-	if (!m) return new Date(date).getTime();
-
-	const h = parseInt(m[1], 10);
-	const min = parseInt(m[2], 10);
-	const sec = m[3] ? parseInt(m[3], 10) : 0;
-
-	const dt = new Date(date);
-	dt.setHours(h, min, sec, 0);
-	return dt.getTime();
 }
 
 async function deleteExpiredShowsWithoutAttendance(organizationId: string): Promise<void> {
@@ -429,29 +415,6 @@ router.post("/:id/activate", async (req, res) => {
   }
   if (show.lockedAt) {
     res.status(400).json({ error: "Closed shows cannot re-open sign-in" });
-    return;
-  }
-
-  const candidates: ShowCandidate[] = await prisma.show.findMany({
-    where: { organizationId: orgId, lockedAt: null, activeAt: null },
-    orderBy: [{ date: "asc" }, { showTime: "asc" }],
-  });
-
-  const nowMs = Date.now();
-  const nextUpcoming =
-    candidates.length > 0
-      ? candidates.reduce<{ id: string; whenMs: number } | null>((best, s) => {
-          const whenMs = getShowDateTimeMs(s.date, s.showTime);
-          if (whenMs < nowMs) return best;
-          if (!best || whenMs < best.whenMs) return { id: s.id, whenMs };
-          return best;
-        }, null)
-      : null;
-
-  if (!nextUpcoming || nextUpcoming.id !== req.params.id) {
-    res.status(400).json({
-      error: "Only the next upcoming show can be opened for sign-in",
-    });
     return;
   }
 

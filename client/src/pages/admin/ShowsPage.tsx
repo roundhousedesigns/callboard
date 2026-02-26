@@ -161,8 +161,22 @@ export function ShowsPage() {
 				<div>
 					<h1 className="page-title">Shows</h1>
 					<p className="page-subtitle">Create upcoming shows and open sign-in.</p>
+					<p className="field-help" style={{ marginTop: '0.25rem' }}>
+						Use "Open next show" to start sign-in for the next unlocked show. Locked shows cannot be reopened.
+					</p>
 				</div>
 				<div className="no-print">
+					<Button
+						size="sm"
+						variant="primary"
+						isDisabled={!nextEligibleShowId}
+						onPress={() => {
+							if (!nextEligibleShowId) return;
+							void handleActivate(nextEligibleShowId);
+						}}
+					>
+						Open next show
+					</Button>
 					<BulkShowCreator
 						triggerLabel="Build schedule"
 						triggerVariant="primary"
@@ -331,17 +345,6 @@ export function ShowsPage() {
 													</>
 												) : (
 													<>
-														{!currentShow && show.id === nextEligibleShowId ? (
-															<Button
-																size="sm"
-																variant="primary"
-																onPress={() => {
-																	void handleActivate(show.id);
-																}}
-															>
-																Open sign-in
-															</Button>
-														) : null}
 														<Button
 															size="sm"
 															variant="danger"
