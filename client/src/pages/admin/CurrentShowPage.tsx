@@ -53,6 +53,12 @@ export function CurrentShowPage() {
 		},
 		[],
 	);
+	const handleSetStatusVoid = useCallback(
+		(userId: string, showId: string, status: AttendanceRecord['status'] | null) => {
+			void handleSetStatus(userId, showId, status);
+		},
+		[handleSetStatus],
+	);
 
 	return (
 		<div style={{ padding: '1.25rem' }}>
@@ -65,7 +71,7 @@ export function CurrentShowPage() {
 			<CurrentShowCallboard
 				readOnly={false}
 				load={load}
-				onSetStatus={handleSetStatus}
+				onSetStatus={handleSetStatusVoid}
 				mobilePortrait={isMobilePortrait}
 			/>
 		</div>
