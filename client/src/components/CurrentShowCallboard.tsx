@@ -12,11 +12,13 @@ export function CurrentShowCallboard({
 	readOnly,
 	load,
 	onSetStatus,
+	mobilePortrait = false,
 }: {
 	heading?: React.ReactNode;
 	readOnly: boolean;
 	load: () => Promise<CurrentShowCallboardData>;
 	onSetStatus?: (userId: string, showId: string, status: AttendanceRecord['status'] | null) => void;
+	mobilePortrait?: boolean;
 }) {
 	const [data, setData] = useState<CurrentShowCallboardData | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -122,6 +124,7 @@ export function CurrentShowCallboard({
 				attendance={data.attendance}
 				readOnly={readOnly}
 				onSetStatus={handleSetStatus}
+				mobilePortrait={mobilePortrait}
 			/>
 		</div>
 	);

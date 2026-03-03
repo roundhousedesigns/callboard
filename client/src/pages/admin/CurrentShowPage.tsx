@@ -6,9 +6,11 @@ import {
 	type CurrentShowCallboardData,
 } from '../../components/CurrentShowCallboard';
 import type { AttendanceRecord, Show } from '../../components/CallboardTable';
+import { useIsMobilePortrait } from '../../lib/useIsMobilePortrait';
 
 export function CurrentShowPage() {
 	const { user } = useAuth();
+	const isMobilePortrait = useIsMobilePortrait();
 
 	const displayTitle =
 		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
@@ -60,7 +62,12 @@ export function CurrentShowPage() {
 					<p className="page-subtitle">Callboard</p>
 				</div>
 			</div>
-			<CurrentShowCallboard readOnly={false} load={load} onSetStatus={handleSetStatus} />
+			<CurrentShowCallboard
+				readOnly={false}
+				load={load}
+				onSetStatus={handleSetStatus}
+				mobilePortrait={isMobilePortrait}
+			/>
 		</div>
 	);
 }

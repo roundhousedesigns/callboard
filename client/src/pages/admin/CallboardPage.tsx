@@ -9,6 +9,7 @@ import {
 	getWeekBoundsWithStart,
 } from '../../lib/dateUtils';
 import { Button, TextFieldInput } from '../../components/ui';
+import { useIsMobilePortrait } from '../../lib/useIsMobilePortrait';
 
 /**
  * Week range for callboard: the full week containing "today", where "week" starts on
@@ -40,6 +41,7 @@ export function CallboardPage() {
 	const [dateRange, setDateRange] = useState({ start: '', end: '' });
 	const [draftRange, setDraftRange] = useState({ start: '', end: '' });
 	const hasLoadedOnceRef = useRef(false);
+	const isMobilePortrait = useIsMobilePortrait();
 
 	const showsPerWeek = 8;
 	const weekStartsOn = user?.organization?.weekStartsOn ?? 0;
@@ -261,6 +263,7 @@ export function CallboardPage() {
 					void handleSetStatus(userId, showId, status);
 				}}
 				highlightNextUpcoming
+				mobilePortrait={isMobilePortrait}
 			/>
 		</div>
 	);

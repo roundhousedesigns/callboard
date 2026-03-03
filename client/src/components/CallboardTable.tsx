@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
 	Button,
@@ -38,6 +39,7 @@ interface CallboardTableProps {
 	readOnly?: boolean;
 	/** When true, visually highlights the next upcoming show column */
 	highlightNextUpcoming?: boolean;
+	mobilePortrait?: boolean;
 }
 
 const statusColors: Record<AttendanceRecord['status'], string> = {
@@ -167,6 +169,7 @@ export function CallboardTable({
 	onSetStatus,
 	readOnly = false,
 	highlightNextUpcoming = false,
+	mobilePortrait = false,
 }: CallboardTableProps) {
 	const getStatus = (userId: string, showId: string) =>
 		attendance.find((a) => a.userId === userId && a.showId === showId)?.status;
@@ -187,6 +190,124 @@ export function CallboardTable({
 		borderRight: '3px solid var(--accent)',
 	};
 	const thHighlightStyle = highlightStyle;
+	const formatShowLabel = (show: Show) => {
+		const d = getLocalDateFromDateOnlyString(show.date);
+		const dayLabel = d.toLocaleDateString(undefined, { weekday: 'short' });
+		const dateLabel = d.toLocaleDateString(undefined, {
+			month: 'numeric',
+			day: 'numeric',
+		});
+		const timeLabel = formatShowTime(show.showTime).toLowerCase().replace(' ', '');
+		return `${dayLabel} ${dateLabel} ${timeLabel}`;
+	};
+	const defaultExpandedShowIds = useMemo(() => {
+		if (shows.length === 0) return new Set<string>();
+		if (nextUpcomingShowId) return new Set<string>([nextUpcomingShowId]);
+		return new Set<string>([shows[0].id]);
+	}, [shows, nextUpcomingShowId]);
+	const [expandedShowIds, setExpandedShowIds] = useState<Set<string>>(defaultExpandedShowIds);
+
+	useEffect(() => {
+		setExpandedShowIds((prev) => {
+			const validIds = new Set(shows.map((show) => show.id));
+			const next = new Set<string>();
+			prev.forEach((id) => {
+				if (validIds.has(id)) next.add(id);
+			});
+			if (next.size === 0 && defaultExpandedShowIds.size > 0) {
+				defaultExpandedShowIds.forEach((id) => next.add(id));
+			}
+			return next;
+		});
+	}, [shows, defaultExpandedShowIds]);
+
+	const toggleShow = (showId: string) => {
+		setExpandedShowIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(showId)) next.delete(showId);
+			else next.add(showId);
+			return next;
+		});
+	};
+
+	if (mobilePortrait) {
+		return (
+			<div className="callboard-mobile-list" role="list" aria-label="Attendance by show">
+				{shows.length === 0 && <p className="muted">No shows in range.</p>}
+				{shows.map((show) => {
+					const showIsOpen = expandedShowIds.has(show.id);
+					const activeShow = !!show.activeAt;
+					return (
+						<section
+							className="callboard-mobile-card"
+							role="listitem"
+							key={show.id}
+							style={isHighlighted(show.id) ? highlightStyle : undefined}
+						>
+							<header className="callboard-mobile-card__header callboard-mobile-card__header--show">
+								<button
+									type="button"
+									className="callboard-mobile-show-toggle"
+									onClick={() => {
+										toggleShow(show.id);
+									}}
+									aria-expanded={showIsOpen}
+									aria-controls={`show-actors-${show.id}`}
+								>
+									<span className="callboard-mobile-show-toggle__icon" aria-hidden>
+										{showIsOpen ? '▾' : '▸'}
+									</span>
+									<span className="callboard-mobile-card__title">{formatShowLabel(show)}</span>
+								</button>
+								{activeShow && !readOnly && (
+									<Link
+										to="/admin/qr"
+										aria-label="Open QR code"
+										title="Open QR code"
+										className="nav-link nav-link--icon nav-link--qr no-print"
+									>
+										<QRCodeIcon />
+									</Link>
+								)}
+							</header>
+							{showIsOpen && (
+								<div className="callboard-mobile-card__body" id={`show-actors-${show.id}`}>
+									{actors.map((actor) => {
+										const status = getStatus(actor.id, show.id) ?? null;
+										return (
+											<div className="callboard-mobile-status-row" key={actor.id}>
+												<div className="callboard-mobile-status-row__meta">
+													<span className="callboard-mobile-status-row__label">
+														{actor.lastName}, {actor.firstName}
+													</span>
+												</div>
+												<div className="callboard-mobile-status-row__control">
+													{readOnly ? (
+														status ? (
+															<span style={{ color: statusColors[status], display: 'inline-flex' }}>
+																<StatusIcon status={status} color={statusColors[status]} />
+															</span>
+														) : (
+															<span style={{ color: 'var(--text-muted)' }}>—</span>
+														)
+													) : (
+														<StatusSelect
+															value={status}
+															onChange={(v) => onSetStatus?.(actor.id, show.id, v)}
+														/>
+													)}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</section>
+					);
+				})}
+			</div>
+		);
+	}
 
 	return (
 		<div className="table-wrap">

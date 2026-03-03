@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
@@ -7,7 +7,13 @@ import { Button } from '../../components/ui';
 export function AdminLayout() {
 	const { user, logout } = useAuth();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const [hasActiveShow, setHasActiveShow] = useState(false);
+	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+	useEffect(() => {
+		setIsMobileMenuOpen(false);
+	}, [location.pathname]);
 
 	async function handleLogout() {
 		await logout();
@@ -52,7 +58,29 @@ export function AdminLayout() {
 		<div className="app-shell">
 			<header className="no-print app-header">
 				<div className="container app-header__inner">
-					<nav className="app-nav" aria-label="Admin">
+					<button
+						type="button"
+						className="app-nav-toggle"
+						aria-expanded={isMobileMenuOpen}
+						aria-controls="admin-nav"
+						onClick={() => {
+							setIsMobileMenuOpen((prev) => !prev);
+						}}
+					>
+						<span aria-hidden>{isMobileMenuOpen ? '✕' : '☰'}</span>
+						<span>Menu</span>
+					</button>
+					<nav
+						id="admin-nav"
+						className={`app-nav${isMobileMenuOpen ? ' is-open' : ''}`}
+						aria-label="Admin"
+						onClick={(event) => {
+							const target = event.target as HTMLElement | null;
+							if (target?.closest('a')) {
+								setIsMobileMenuOpen(false);
+							}
+						}}
+					>
 						<NavLink
 							to="/admin"
 							end
@@ -84,6 +112,12 @@ export function AdminLayout() {
 						>
 							Settings
 						</NavLink>
+						<NavLink
+							to="/admin/qr"
+							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+						>
+							QR
+						</NavLink>
 
 						{hasActiveShow && (
 							<NavLink
@@ -94,7 +128,7 @@ export function AdminLayout() {
 							</NavLink>
 						)}
 					</nav>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+					<div className="app-header__actions">
 						<span className="badge">
 							{user?.organization?.showTitle ?? user?.organization?.name ?? 'Admin'}
 						</span>
