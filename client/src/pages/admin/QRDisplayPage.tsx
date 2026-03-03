@@ -113,9 +113,6 @@ export function QRDisplayPage() {
 				<div className="qr-box" style={{ margin: '0 auto' }}>
 					<QRCodeSVG value={signInUrl} size={256} level="H" />
 				</div>
-				<p className="muted" style={{ fontSize: '0.95rem', margin: 0 }}>
-					Actors must be logged in to sign in.
-				</p>
 			</div>
 		</div>
 	);
