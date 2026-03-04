@@ -77,7 +77,7 @@ export function PastShowSheetPage() {
 	if (!show) return <div className="alert">Show not found.</div>;
 
 	const displayTitle =
-		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Sign-in sheet corrections';
+		membership?.company?.showTitle ?? membership?.company?.name ?? 'Sign-in sheet corrections';
 
 	return (
 		<div>

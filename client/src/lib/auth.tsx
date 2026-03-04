@@ -2,8 +2,8 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { api } from './api';
 
 export interface Membership {
-	organizationId: string;
-	organization: {
+	companyId: string;
+	company: {
 		id: string;
 		name: string;
 		slug: string;
@@ -76,21 +76,21 @@ export function useAuth() {
 
 export function hasAdminAccess(user: User | null, orgSlug: string): boolean {
 	if (!user) return false;
-	const m = user.memberships.find((x) => x.organization.slug === orgSlug);
+	const m = user.memberships.find((x) => x.company.slug === orgSlug);
 	return m?.role === 'owner' || m?.role === 'admin';
 }
 
 export function hasActorAccess(user: User | null, orgSlug: string): boolean {
 	if (!user) return false;
-	return user.memberships.some((x) => x.organization.slug === orgSlug);
+	return user.memberships.some((x) => x.company.slug === orgSlug);
 }
 
 export function isOwner(user: User | null, orgSlug: string): boolean {
 	if (!user) return false;
-	return user.memberships.some((x) => x.organization.slug === orgSlug && x.role === 'owner');
+	return user.memberships.some((x) => x.company.slug === orgSlug && x.role === 'owner');
 }
 
 export function getMembership(user: User | null, orgSlug: string): Membership | undefined {
 	if (!user) return undefined;
-	return user.memberships.find((x) => x.organization.slug === orgSlug);
+	return user.memberships.find((x) => x.company.slug === orgSlug);
 }

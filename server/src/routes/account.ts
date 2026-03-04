@@ -9,20 +9,20 @@ router.get("/companies", authMiddleware, async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-  const memberships = await prisma.organizationMembership.findMany({
+  const memberships = await prisma.companyMembership.findMany({
     where: { userId: req.user.id },
     select: {
-      organizationId: true,
+      companyId: true,
       role: true,
-      organization: {
+      company: {
         select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
       },
     },
   });
   res.json(
     memberships.map((m) => ({
-      organizationId: m.organizationId,
-      organization: m.organization,
+      companyId: m.companyId,
+      company: m.company,
       role: m.role,
     }))
   );

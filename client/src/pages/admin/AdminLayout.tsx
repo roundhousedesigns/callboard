@@ -13,8 +13,8 @@ export function AdminLayout() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
-	const organization = membership?.organization;
-	const orgName = organization ? (organization.showTitle ?? organization.name) : 'Admin';
+	const company = membership?.company;
+	const orgName = company ? (company.showTitle ?? company.name) : 'Admin';
 
 	useEffect(() => {
 		setIsMobileMenuOpen(false);

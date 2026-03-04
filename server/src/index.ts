@@ -10,9 +10,9 @@ import { userRoutes } from "./routes/users.js";
 import { showRoutes } from "./routes/shows.js";
 import { attendanceRoutes } from "./routes/attendance.js";
 import { signInRoutes } from "./routes/signIn.js";
-import { organizationRoutes } from "./routes/organizations.js";
+import { companyRoutes } from "./routes/companies.js";
 import { actorRoutes } from "./routes/actor.js";
-import { authMiddleware, adminOrOwner, ownerOnly, anyMember } from "./middleware/auth.js";
+import { authMiddleware, adminOrOwner, anyMember } from "./middleware/auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -31,28 +31,28 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/sign-in", signInRoutes);
-app.use("/api/organizations", organizationRoutes);
+app.use("/api/companies", companyRoutes);
 
 app.use(
-  "/api/organizations/:orgSlug/users",
+  "/api/companies/:orgSlug/users",
   authMiddleware,
   adminOrOwner,
   userRoutes
 );
 app.use(
-  "/api/organizations/:orgSlug/shows",
+  "/api/companies/:orgSlug/shows",
   authMiddleware,
   adminOrOwner,
   showRoutes
 );
 app.use(
-  "/api/organizations/:orgSlug/attendance",
+  "/api/companies/:orgSlug/attendance",
   authMiddleware,
   adminOrOwner,
   attendanceRoutes
 );
 app.use(
-  "/api/organizations/:orgSlug/actor",
+  "/api/companies/:orgSlug/actor",
   authMiddleware,
   anyMember,
   actorRoutes

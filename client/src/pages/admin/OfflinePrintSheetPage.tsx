@@ -159,7 +159,7 @@ export function OfflinePrintSheetPage() {
 	if (loading) return <div className="muted">Loading...</div>;
 
 	const displayTitle =
-		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Offline Attendance Sheet';
+		membership?.company?.showTitle ?? membership?.company?.name ?? 'Offline Attendance Sheet';
 
 	return (
 		<div>

@@ -14,7 +14,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
-      organizationId?: string;
+      companyId?: string;
       membershipRole?: MembershipRole;
     }
   }
@@ -49,7 +49,7 @@ export function authMiddleware(
   }
 }
 
-/** Validates user has membership in org with given role. Owner implies admin. Sets req.organizationId and req.membershipRole. */
+/** Validates user has membership in company with given role. Owner implies admin. Sets req.companyId and req.membershipRole. */
 export function orgContext(
   allowedRoles: MembershipRole[]
 ): (req: Request, res: Response, next: NextFunction) => void {
@@ -60,29 +60,29 @@ export function orgContext(
     }
     const orgSlug = req.params.orgSlug;
     if (!orgSlug) {
-      res.status(400).json({ error: "Organization slug required" });
+      res.status(400).json({ error: "Company slug required" });
       return;
     }
     try {
-      const org = await prisma.organization.findUnique({
+      const company = await prisma.company.findUnique({
         where: { slug: orgSlug },
         select: { id: true },
       });
-      if (!org) {
-        res.status(404).json({ error: "Organization not found" });
+      if (!company) {
+        res.status(404).json({ error: "Company not found" });
         return;
       }
-      const membership = await prisma.organizationMembership.findUnique({
+      const membership = await prisma.companyMembership.findUnique({
         where: {
-          userId_organizationId: {
+          userId_companyId: {
             userId: req.user.id,
-            organizationId: org.id,
+            companyId: company.id,
           },
         },
         select: { role: true },
       });
       if (!membership) {
-        res.status(403).json({ error: "You are not a member of this organization" });
+        res.status(403).json({ error: "You are not a member of this company" });
         return;
       }
       const role = membership.role as MembershipRole;
@@ -93,7 +93,7 @@ export function orgContext(
         res.status(403).json({ error: "Insufficient permissions" });
         return;
       }
-      req.organizationId = org.id;
+      req.companyId = company.id;
       req.membershipRole = role;
       next();
     } catch (err) {
@@ -110,4 +110,3 @@ export const ownerOnly = orgContext(["owner"]);
 
 /** Allow owner, admin, or actor. */
 export const anyMember = orgContext(["owner", "admin", "actor"]);
-

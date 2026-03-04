@@ -13,7 +13,7 @@ const setAttendanceSchema = z.object({
 });
 
 router.get("/", async (req, res) => {
-  const orgId = req.organizationId!;
+  const companyId = req.companyId!;
   const showId = req.query.showId as string | undefined;
   const userId = req.query.userId as string | undefined;
 
@@ -24,8 +24,8 @@ router.get("/", async (req, res) => {
   const attendance = await prisma.attendance.findMany({
     where: {
       ...where,
-      user: { memberships: { some: { organizationId: orgId } } },
-      show: { organizationId: orgId },
+      user: { memberships: { some: { companyId } } },
+      show: { companyId },
     },
     include: {
       user: { select: { id: true, firstName: true, lastName: true } },
@@ -38,17 +38,17 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const data = setAttendanceSchema.parse(req.body);
-    const orgId = req.organizationId!;
+    const companyId = req.companyId!;
 
     const [user, show] = await Promise.all([
       prisma.user.findFirst({
         where: {
           id: data.userId,
-          memberships: { some: { organizationId: orgId } },
+          memberships: { some: { companyId } },
         },
       }),
       prisma.show.findFirst({
-        where: { id: data.showId, organizationId: orgId },
+        where: { id: data.showId, companyId },
       }),
     ]);
 
@@ -93,14 +93,14 @@ router.delete("/", async (req, res) => {
     return;
   }
 
-  const orgId = req.organizationId!;
+  const companyId = req.companyId!;
 
   const attendance = await prisma.attendance.findFirst({
     where: {
       userId,
       showId,
-      user: { memberships: { some: { organizationId: orgId } } },
-      show: { organizationId: orgId },
+      user: { memberships: { some: { companyId } } },
+      show: { companyId },
     },
   });
 
@@ -122,19 +122,19 @@ router.post("/bulk", async (req, res) => {
       userIds: z.array(z.string()),
     });
     const data = schema.parse(req.body);
-    const orgId = req.organizationId!;
+    const companyId = req.companyId!;
 
     const show = await prisma.show.findFirst({
-      where: { id: data.showId, organizationId: orgId },
+      where: { id: data.showId, companyId },
     });
     if (!show) {
       res.status(404).json({ error: "Show not found" });
       return;
     }
 
-    const memberships = await prisma.organizationMembership.findMany({
+    const memberships = await prisma.companyMembership.findMany({
       where: {
-        organizationId: orgId,
+        companyId,
         userId: { in: data.userIds },
         role: "actor",
       },

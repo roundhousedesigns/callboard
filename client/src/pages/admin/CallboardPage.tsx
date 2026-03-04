@@ -13,7 +13,7 @@ import { useIsMobilePortrait } from '../../lib/useIsMobilePortrait';
 
 /**
  * Week range for callboard: the full week containing "today", where "week" starts on
- * the organization-configured start day.
+ * the company-configured start day.
  */
 function getThisWeekRange(weekStartsOn: number) {
 	const now = new Date();
@@ -54,7 +54,7 @@ export function CallboardPage() {
 	const isMobilePortrait = useIsMobilePortrait();
 
 	const showsPerWeek = 8;
-	const weekStartsOn = membership?.organization?.weekStartsOn ?? 0;
+	const weekStartsOn = membership?.company?.weekStartsOn ?? 0;
 
 	useEffect(() => {
 		const thisWeek = getThisWeekRange(weekStartsOn);
@@ -178,7 +178,7 @@ export function CallboardPage() {
 	}
 
 	const displayTitle =
-		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Callboard';
+		membership?.company?.showTitle ?? membership?.company?.name ?? 'Callboard';
 
 	const isDraftDirty = draftRange.start !== dateRange.start || draftRange.end !== dateRange.end;
 

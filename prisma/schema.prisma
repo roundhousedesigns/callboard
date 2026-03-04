@@ -6,29 +6,29 @@ datasource db {
   provider = "postgresql"
 }
 
-model Organization {
+model Company {
   id           String  @id @default(cuid())
   name         String
   slug         String  @unique
   showTitle    String?
   weekStartsOn Int?   // 0=Sunday, 1=Monday, ... 6=Saturday
 
-  memberships OrganizationMembership[]
+  memberships CompanyMembership[]
   shows       Show[]
 }
 
-model OrganizationMembership {
-  id             String         @id @default(cuid())
-  userId         String
-  organizationId String
-  role           MembershipRole
+model CompanyMembership {
+  id        String         @id @default(cuid())
+  userId    String
+  companyId String
+  role      MembershipRole
 
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, organizationId])
+  @@unique([userId, companyId])
   @@index([userId])
-  @@index([organizationId])
+  @@index([companyId])
 }
 
 enum MembershipRole {
@@ -44,7 +44,7 @@ model User {
   firstName      String
   lastName       String
 
-  memberships       OrganizationMembership[]
+  memberships       CompanyMembership[]
   attendance        Attendance[]           @relation("ActorAttendance")
   markedAttendance  Attendance[]            @relation("MarkedByUser")
 
@@ -52,19 +52,19 @@ model User {
 }
 
 model Show {
-  id             String    @id @default(cuid())
-  organizationId String
-  date           DateTime  @db.Date
-  showTime       String   @map("time")
-  activeAt       DateTime?
-  lockedAt       DateTime?
-  signInToken    String?   @unique
+  id        String    @id @default(cuid())
+  companyId String
+  date      DateTime  @db.Date
+  showTime  String   @map("time")
+  activeAt  DateTime?
+  lockedAt  DateTime?
+  signInToken String? @unique
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  attendance   Attendance[]
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
 
-  @@unique([organizationId, date, showTime])
-  @@index([organizationId])
+  @@unique([companyId, date, showTime])
+  @@index([companyId])
   @@index([signInToken])
 }
 

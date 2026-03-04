@@ -10,7 +10,7 @@ const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const org = await prisma.organization.upsert({
+  const company = await prisma.company.upsert({
     where: { slug: "demo-theatre" },
     update: {},
     create: {
@@ -33,14 +33,14 @@ async function main() {
     },
   });
 
-  await prisma.organizationMembership.upsert({
+  await prisma.companyMembership.upsert({
     where: {
-      userId_organizationId: { userId: adminUser.id, organizationId: org.id },
+      userId_companyId: { userId: adminUser.id, companyId: company.id },
     },
     update: { role: "owner" },
     create: {
       userId: adminUser.id,
-      organizationId: org.id,
+      companyId: company.id,
       role: "owner",
     },
   });
@@ -65,14 +65,14 @@ async function main() {
       },
     });
 
-    await prisma.organizationMembership.upsert({
+    await prisma.companyMembership.upsert({
       where: {
-        userId_organizationId: { userId: user.id, organizationId: org.id },
+        userId_companyId: { userId: user.id, companyId: company.id },
       },
       update: { role: "actor" },
       create: {
         userId: user.id,
-        organizationId: org.id,
+        companyId: company.id,
         role: "actor",
       },
     });
@@ -80,7 +80,7 @@ async function main() {
 
   // Keep demo users, but start with an empty show schedule.
   await prisma.show.deleteMany({
-    where: { organizationId: org.id },
+    where: { companyId: company.id },
   });
 
   await prisma.show.createMany({

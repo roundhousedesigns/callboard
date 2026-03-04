@@ -21,9 +21,9 @@ const updateUserSchema = z.object({
 });
 
 router.get("/", async (req, res) => {
-  const orgId = req.organizationId!;
-  const memberships = await prisma.organizationMembership.findMany({
-    where: { organizationId: orgId },
+  const companyId = req.companyId!;
+  const memberships = await prisma.companyMembership.findMany({
+    where: { companyId },
     include: {
       user: {
         select: {
@@ -46,7 +46,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const data = createUserSchema.parse(req.body);
-    const orgId = req.organizationId!;
+    const companyId = req.companyId!;
     const membershipRole = req.membershipRole!;
 
     if (data.role === "owner" && membershipRole !== "owner") {
@@ -73,27 +73,27 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const existing = await prisma.organizationMembership.findUnique({
+    const existing = await prisma.companyMembership.findUnique({
       where: {
-        userId_organizationId: { userId: user.id, organizationId: orgId },
+        userId_companyId: { userId: user.id, companyId },
       },
     });
     if (existing) {
-      res.status(400).json({ error: "User is already a member of this organization" });
+      res.status(400).json({ error: "User is already a member of this company" });
       return;
     }
 
-    await prisma.organizationMembership.create({
+    await prisma.companyMembership.create({
       data: {
         userId: user.id,
-        organizationId: orgId,
+        companyId,
         role: data.role,
       },
     });
 
-    const membership = await prisma.organizationMembership.findUniqueOrThrow({
+    const membership = await prisma.companyMembership.findUniqueOrThrow({
       where: {
-        userId_organizationId: { userId: user.id, organizationId: orgId },
+        userId_companyId: { userId: user.id, companyId },
       },
       include: {
         user: {
@@ -112,10 +112,10 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const orgId = req.organizationId!;
-  const membership = await prisma.organizationMembership.findUnique({
+  const companyId = req.companyId!;
+  const membership = await prisma.companyMembership.findUnique({
     where: {
-      userId_organizationId: { userId: req.params.id, organizationId: orgId },
+      userId_companyId: { userId: req.params.id, companyId },
     },
     include: {
       user: {
@@ -133,11 +133,11 @@ router.get("/:id", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   try {
     const data = updateUserSchema.parse(req.body);
-    const orgId = req.organizationId!;
+    const companyId = req.companyId!;
 
-    const membership = await prisma.organizationMembership.findUnique({
+    const membership = await prisma.companyMembership.findUnique({
       where: {
-        userId_organizationId: { userId: req.params.id, organizationId: orgId },
+        userId_companyId: { userId: req.params.id, companyId },
       },
     });
     if (!membership) {
@@ -167,19 +167,19 @@ router.patch("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const orgId = req.organizationId!;
-  const membership = await prisma.organizationMembership.findUnique({
+  const companyId = req.companyId!;
+  const membership = await prisma.companyMembership.findUnique({
     where: {
-      userId_organizationId: { userId: req.params.id, organizationId: orgId },
+      userId_companyId: { userId: req.params.id, companyId },
     },
   });
   if (!membership) {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  await prisma.organizationMembership.delete({
+  await prisma.companyMembership.delete({
     where: {
-      userId_organizationId: { userId: req.params.id, organizationId: orgId },
+      userId_companyId: { userId: req.params.id, companyId },
     },
   });
   res.json({ ok: true });

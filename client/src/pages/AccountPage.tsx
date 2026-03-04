@@ -25,7 +25,7 @@ export function AccountPage() {
 				setError('Invalid company name');
 				return;
 			}
-			const org = await api.post<{ id: string; slug: string }>('/organizations', {
+			const org = await api.post<{ id: string; slug: string }>('/companies', {
 				name: name.trim(),
 				slug: slug || `org-${Date.now()}`,
 			});
@@ -76,9 +76,9 @@ export function AccountPage() {
 						<h2 className="account-section-title">Your companies</h2>
 						<ul className="account-list">
 							{memberships.map((m) => (
-								<li key={m.organizationId} className="account-item">
+								<li key={m.companyId} className="account-item">
 									<div className="account-item__identity">
-										<strong>{m.organization.showTitle ?? m.organization.name}</strong>
+										<strong>{m.company.showTitle ?? m.company.name}</strong>
 										<span className="badge badge--role">
 											{m.role}
 										</span>
@@ -88,7 +88,7 @@ export function AccountPage() {
 											<Button
 												size="sm"
 												variant="ghost"
-												onPress={() => navigate(`/admin/${m.organization.slug}`)}
+												onPress={() => navigate(`/admin/${m.company.slug}`)}
 											>
 												Admin
 											</Button>
@@ -97,7 +97,7 @@ export function AccountPage() {
 											<Button
 												size="sm"
 												variant="ghost"
-												onPress={() => navigate(`/actor/${m.organization.slug}`)}
+												onPress={() => navigate(`/actor/${m.company.slug}`)}
 											>
 												Callboard
 											</Button>
@@ -106,7 +106,7 @@ export function AccountPage() {
 											<Button
 												size="sm"
 												variant="ghost"
-												onPress={() => navigate(`/admin/${m.organization.slug}/current-show`)}
+												onPress={() => navigate(`/admin/${m.company.slug}/current-show`)}
 											>
 												Current show
 											</Button>
@@ -115,7 +115,7 @@ export function AccountPage() {
 											<Button
 												size="sm"
 												variant="ghost"
-												onPress={() => navigate(`/actor/${m.organization.slug}`)}
+												onPress={() => navigate(`/actor/${m.company.slug}`)}
 											>
 												Callboard
 											</Button>

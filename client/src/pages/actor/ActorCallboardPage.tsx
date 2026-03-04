@@ -8,7 +8,7 @@ export function ActorCallboardPage() {
 	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
 
 	const displayTitle =
-		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Callboard';
+		membership?.company?.showTitle ?? membership?.company?.name ?? 'Callboard';
 
 	return (
 		<div className="page-content">

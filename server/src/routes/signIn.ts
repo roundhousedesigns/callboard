@@ -9,7 +9,7 @@ router.get("/:token", authMiddleware, async (req, res) => {
 
   const show = await prisma.show.findUnique({
     where: { signInToken: token },
-    include: { organization: { select: { slug: true } } },
+    include: { company: { select: { slug: true } } },
   });
 
   if (!show) {
@@ -26,17 +26,17 @@ router.get("/:token", authMiddleware, async (req, res) => {
   }
 
   const userId = req.user!.id;
-  const membership = await prisma.organizationMembership.findUnique({
+  const membership = await prisma.companyMembership.findUnique({
     where: {
-      userId_organizationId: {
+      userId_companyId: {
         userId,
-        organizationId: show.organizationId,
+        companyId: show.companyId,
       },
     },
     select: { role: true },
   });
   if (!membership || membership.role !== "actor") {
-    res.status(403).json({ error: "You are not an actor in this organization" });
+    res.status(403).json({ error: "You are not an actor in this company" });
     return;
   }
 
@@ -49,7 +49,7 @@ router.get("/:token", authMiddleware, async (req, res) => {
     res.json({
       success: true,
       alreadySignedIn: true,
-      show: { date: show.date, showTime: show.showTime, orgSlug: show.organization.slug },
+      show: { date: show.date, showTime: show.showTime, orgSlug: show.company.slug },
     });
     return;
   }
@@ -66,7 +66,7 @@ router.get("/:token", authMiddleware, async (req, res) => {
   res.json({
     success: true,
     alreadySignedIn: false,
-    show: { date: show.date, showTime: show.showTime, orgSlug: show.organization.slug },
+    show: { date: show.date, showTime: show.showTime, orgSlug: show.company.slug },
   });
 });
 

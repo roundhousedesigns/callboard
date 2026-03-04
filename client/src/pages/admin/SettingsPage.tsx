@@ -114,7 +114,7 @@ export function SettingsPage() {
 			formData.append('file', importFile);
 			formData.append('skipDuplicates', String(skipDuplicates));
 
-			const res = await fetch(`/api/organizations/${orgSlug}/shows/import`, {
+			const res = await fetch(`/api/companies/${orgSlug}/shows/import`, {
 				method: 'POST',
 				credentials: 'include',
 				body: formData,
@@ -142,7 +142,7 @@ export function SettingsPage() {
 		setAddMemberLoading(true);
 		setMessage(null);
 		try {
-			const role = canRenameDelete ? addRole : 'actor';
+			const role = isOwnerMember ? addRole : 'actor';
 			await api.org(orgSlug).post('/members', { email: addEmail.trim(), role });
 			const membersRes = await api.org(orgSlug).get<OrgMember[]>('/members');
 			setMembers(membersRes);
@@ -169,7 +169,7 @@ export function SettingsPage() {
 
 	if (loading) return <div className="muted">Loading...</div>;
 
-	const displayOrgName = membership?.organization?.name || 'Company';
+	const displayOrgName = membership?.company?.name || 'Company';
 	const isOwnerMember = membership?.role === 'owner';
 
 	return (

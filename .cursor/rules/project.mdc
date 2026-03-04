@@ -16,14 +16,14 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
 
 ## Terminology
 
-- **Organization** (called "Company" in the UI): The producing theatre company. Top-level multi-tenant entity. Has a `name`, `slug`, `showTitle` (display name override used in headers/printouts; falls back to `name`), and `weekStartsOn` preference. Users belong to an Organization via a membership with a role (`owner`, `admin`, or `actor`). Company name/rename/delete is managed from the Account page.
-- **Show**: An individual performance — a specific `date` + `showTime` (e.g. "2026-03-15 matinee"). Belongs to an Organization. Has a unique `signInToken` for QR code sign-in, and `activeAt`/`lockedAt` timestamps to control the sign-in window. Show-level settings (show title display name, week start, calendar import, team members) are managed from the Show Settings page within the admin area.
-- **Membership** (`OrganizationMembership`): Links a User to an Organization with a role. Roles are `owner` (full control including rename/delete), `admin` (manage shows and attendance), `actor` (sign in and view callboard).
+- **Company** (Prisma model: `Company`): The producing theatre company. Top-level multi-tenant entity. Has a `name`, `slug`, `showTitle` (display name override used in headers/printouts; falls back to `name`), and `weekStartsOn` preference. Users belong to a Company via a membership with a role (`owner`, `admin`, or `actor`). Company management is done from the Account page.
+- **Show**: An individual performance — a specific `date` + `showTime` (e.g. "2026-03-15 matinee"). Belongs to a Company. Has a unique `signInToken` for QR code sign-in, and `activeAt`/`lockedAt` timestamps to control the sign-in window. Show-level settings (show title display name, week start, calendar import, team members) are managed from the Show Settings page within the admin area.
+- **Membership** (`CompanyMembership`): Links a User to a Company with a role. Roles are `owner` (full control including rename/delete), `admin` (manage shows and attendance), `actor` (sign in and view callboard).
 - **Attendance**: Links a User to a Show with a status: `signed_in`, `absent`, `vacation`, or `personal_day`. Tracks who signed in, when, and optionally which admin marked the status.
 
 ## Features
 
-- **QR Code Sign-In**: Actors scan a unique QR code per Organization to sign in (must be logged in)
+- **QR Code Sign-In**: Actors scan a unique QR code per Company to sign in (must be logged in)
 - **Admin Controls**: Manually sign in actors, or mark as absent, vacation, or personal day
 - **Calendar Import**: Import performance calendar from CSV
 - **Attendance Reports**: View and print reports
@@ -37,11 +37,17 @@ A webapp for professional theatre companies to manage actor attendance. Replaces
 
 ## Data Model (Prisma)
 
-- **Organization**: `id`, `name`, `slug` (unique URL key), `showTitle` (optional display name override), `weekStartsOn` (0=Sun…6=Sat). Has many `OrganizationMembership` and `Show`.
-- **OrganizationMembership**: Links `User` ↔ `Organization` with a `MembershipRole` (`owner` | `admin` | `actor`).
+- **Company**: `id`, `name`, `slug` (unique URL key), `showTitle` (optional display name override), `weekStartsOn` (0=Sun…6=Sat). Has many `CompanyMembership` and `Show`.
+- **CompanyMembership**: Links `User` ↔ `Company` with a `MembershipRole` (`owner` | `admin` | `actor`). Fields: `companyId`, `userId`, `role`.
 - **User**: `email`, `hashedPassword`, `firstName`, `lastName`. Has many memberships and attendance records.
-- **Show**: `organizationId`, `date` (date only), `showTime` (string, e.g. `"19:30"` or `"matinee"`), `signInToken` (unique, used in QR URL), `activeAt`, `lockedAt`. Unique per org + date + time.
+- **Show**: `companyId`, `date` (date only), `showTime` (string, e.g. `"19:30"` or `"matinee"`), `signInToken` (unique, used in QR URL), `activeAt`, `lockedAt`. Unique per company + date + time.
 - **Attendance**: `userId`, `showId`, `status` (`signed_in` | `absent` | `vacation` | `personal_day`), `signedInAt`, `markedByUserId`. Unique per user + show.
+
+## API
+
+- Company CRUD and membership management: `/api/companies/` and `/api/companies/:orgSlug/...`
+- The URL parameter is still named `:orgSlug` for brevity throughout the codebase.
+- Frontend uses `api.org(orgSlug)` helper which routes to `/api/companies/:orgSlug/...`
 
 ## Development
 

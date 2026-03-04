@@ -4,10 +4,10 @@ import { prisma } from "../db.js";
 const router = Router({ mergeParams: true });
 
 router.get("/callboard/active", async (req, res) => {
-  const orgId = req.organizationId!;
+  const companyId = req.companyId!;
 
   const show = await prisma.show.findFirst({
-    where: { organizationId: orgId, activeAt: { not: null } },
+    where: { companyId, activeAt: { not: null } },
     orderBy: { activeAt: "desc" },
     select: {
       id: true,
@@ -24,8 +24,8 @@ router.get("/callboard/active", async (req, res) => {
   }
 
   const [actors, attendance] = await Promise.all([
-    prisma.organizationMembership.findMany({
-      where: { organizationId: orgId, role: "actor" },
+    prisma.companyMembership.findMany({
+      where: { companyId, role: "actor" },
       select: {
         user: {
           select: { id: true, firstName: true, lastName: true },
@@ -35,8 +35,8 @@ router.get("/callboard/active", async (req, res) => {
     prisma.attendance.findMany({
       where: {
         showId: show.id,
-        user: { memberships: { some: { organizationId: orgId } } },
-        show: { organizationId: orgId },
+        user: { memberships: { some: { companyId } } },
+        show: { companyId },
       },
       select: { userId: true, showId: true, status: true },
     }),

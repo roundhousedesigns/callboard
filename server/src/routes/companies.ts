@@ -40,27 +40,27 @@ router.post("/", authMiddleware, asyncHandler(async (req, res) => {
       return;
     }
     const data = createSchema.parse(req.body);
-    const existing = await prisma.organization.findUnique({
+    const existing = await prisma.company.findUnique({
       where: { slug: data.slug },
     });
     if (existing) {
-      res.status(400).json({ error: "Organization slug already exists" });
+      res.status(400).json({ error: "Company slug already exists" });
       return;
     }
-    const org = await prisma.$transaction(async (tx) => {
-      const created = await tx.organization.create({
+    const company = await prisma.$transaction(async (tx) => {
+      const created = await tx.company.create({
         data: { name: data.name, slug: data.slug },
       });
-      await tx.organizationMembership.create({
+      await tx.companyMembership.create({
         data: {
           userId: req.user!.id,
-          organizationId: created.id,
+          companyId: created.id,
           role: "owner",
         },
       });
       return created;
     });
-    res.status(201).json(org);
+    res.status(201).json(company);
   } catch (err) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: err.errors[0]?.message ?? "Invalid input" });
@@ -73,9 +73,9 @@ router.post("/", authMiddleware, asyncHandler(async (req, res) => {
 router.patch("/:orgSlug", authMiddleware, ownerOnly, asyncHandler(async (req, res) => {
   try {
     const data = updateSchema.parse(req.body);
-    const orgId = req.organizationId!;
-    await prisma.organization.update({
-      where: { id: orgId },
+    const companyId = req.companyId!;
+    await prisma.company.update({
+      where: { id: companyId },
       data: { name: data.name },
     });
     res.json({ ok: true });
@@ -89,39 +89,39 @@ router.patch("/:orgSlug", authMiddleware, ownerOnly, asyncHandler(async (req, re
 }));
 
 router.delete("/:orgSlug", authMiddleware, ownerOnly, asyncHandler(async (req, res) => {
-  const orgId = req.organizationId!;
-  await prisma.organization.delete({
-    where: { id: orgId },
+  const companyId = req.companyId!;
+  await prisma.company.delete({
+    where: { id: companyId },
   });
   res.json({ ok: true });
 }));
 
 router.get("/:orgSlug/settings", authMiddleware, adminOrOwner, asyncHandler(async (req, res) => {
-  const orgId = req.organizationId!;
-  const org = await prisma.organization.findUnique({
-    where: { id: orgId },
+  const companyId = req.companyId!;
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
     select: { showTitle: true, weekStartsOn: true },
   });
-  if (!org) {
-    res.status(404).json({ error: "Organization not found" });
+  if (!company) {
+    res.status(404).json({ error: "Company not found" });
     return;
   }
-  res.json(org);
+  res.json(company);
 }));
 
 router.patch("/:orgSlug/settings", authMiddleware, adminOrOwner, asyncHandler(async (req, res) => {
   try {
     const data = settingsSchema.parse(req.body);
-    const orgId = req.organizationId!;
-    const org = await prisma.organization.update({
-      where: { id: orgId },
+    const companyId = req.companyId!;
+    const company = await prisma.company.update({
+      where: { id: companyId },
       data: {
         ...(data.showTitle !== undefined && { showTitle: data.showTitle || null }),
         ...(data.weekStartsOn !== undefined && { weekStartsOn: data.weekStartsOn ?? null }),
       },
       select: { showTitle: true, weekStartsOn: true },
     });
-    res.json(org);
+    res.json(company);
   } catch (err) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: err.errors[0]?.message ?? "Invalid input" });
@@ -132,9 +132,9 @@ router.patch("/:orgSlug/settings", authMiddleware, adminOrOwner, asyncHandler(as
 }));
 
 router.get("/:orgSlug/members", authMiddleware, adminOrOwner, asyncHandler(async (req, res) => {
-  const orgId = req.organizationId!;
-  const memberships = await prisma.organizationMembership.findMany({
-    where: { organizationId: orgId },
+  const companyId = req.companyId!;
+  const memberships = await prisma.companyMembership.findMany({
+    where: { companyId },
     include: {
       user: {
         select: { id: true, email: true, firstName: true, lastName: true },
@@ -152,7 +152,7 @@ router.get("/:orgSlug/members", authMiddleware, adminOrOwner, asyncHandler(async
 router.post("/:orgSlug/members", authMiddleware, adminOrOwner, asyncHandler(async (req, res) => {
   try {
     const data = addMemberSchema.parse(req.body);
-    const orgId = req.organizationId!;
+    const companyId = req.companyId!;
     const membershipRole = req.membershipRole!;
 
     if (data.role === "owner" && membershipRole !== "owner") {
@@ -164,7 +164,7 @@ router.post("/:orgSlug/members", authMiddleware, adminOrOwner, asyncHandler(asyn
       return;
     }
 
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
     if (!user) {
@@ -172,9 +172,9 @@ router.post("/:orgSlug/members", authMiddleware, adminOrOwner, asyncHandler(asyn
       return;
     }
 
-    const existing = await prisma.organizationMembership.findUnique({
+    const existing = await prisma.companyMembership.findUnique({
       where: {
-        userId_organizationId: { userId: user.id, organizationId: orgId },
+        userId_companyId: { userId: user.id, companyId },
       },
     });
     if (existing) {
@@ -182,10 +182,10 @@ router.post("/:orgSlug/members", authMiddleware, adminOrOwner, asyncHandler(asyn
       return;
     }
 
-    const membership = await prisma.organizationMembership.create({
+    const membership = await prisma.companyMembership.create({
       data: {
         userId: user.id,
-        organizationId: orgId,
+        companyId,
         role: data.role,
       },
       include: {
@@ -207,7 +207,7 @@ router.post("/:orgSlug/members", authMiddleware, adminOrOwner, asyncHandler(asyn
 router.patch("/:orgSlug/members/:userId", authMiddleware, adminOrOwner, asyncHandler(async (req, res) => {
   try {
     const data = updateMemberSchema.parse(req.body);
-    const orgId = req.organizationId!;
+    const companyId = req.companyId!;
     const targetUserId = req.params.userId;
     const membershipRole = req.membershipRole!;
 
@@ -220,9 +220,9 @@ router.patch("/:orgSlug/members/:userId", authMiddleware, adminOrOwner, asyncHan
       return;
     }
 
-    const membership = await prisma.organizationMembership.findUnique({
+    const membership = await prisma.companyMembership.findUnique({
       where: {
-        userId_organizationId: { userId: targetUserId, organizationId: orgId },
+        userId_companyId: { userId: targetUserId, companyId },
       },
     });
     if (!membership) {
@@ -230,9 +230,9 @@ router.patch("/:orgSlug/members/:userId", authMiddleware, adminOrOwner, asyncHan
       return;
     }
 
-    await prisma.organizationMembership.update({
+    await prisma.companyMembership.update({
       where: {
-        userId_organizationId: { userId: targetUserId, organizationId: orgId },
+        userId_companyId: { userId: targetUserId, companyId },
       },
       data: { role: data.role },
     });
@@ -247,13 +247,13 @@ router.patch("/:orgSlug/members/:userId", authMiddleware, adminOrOwner, asyncHan
 }));
 
 router.delete("/:orgSlug/members/:userId", authMiddleware, adminOrOwner, asyncHandler(async (req, res) => {
-  const orgId = req.organizationId!;
+  const companyId = req.companyId!;
   const targetUserId = req.params.userId;
   const currentUserId = req.user!.id;
 
   if (targetUserId === currentUserId) {
-    const ownerCount = await prisma.organizationMembership.count({
-      where: { organizationId: orgId, role: "owner" },
+    const ownerCount = await prisma.companyMembership.count({
+      where: { companyId, role: "owner" },
     });
     if (ownerCount <= 1) {
       res.status(400).json({ error: "Cannot remove the last owner" });
@@ -261,9 +261,9 @@ router.delete("/:orgSlug/members/:userId", authMiddleware, adminOrOwner, asyncHa
     }
   }
 
-  const membership = await prisma.organizationMembership.findUnique({
+  const membership = await prisma.companyMembership.findUnique({
     where: {
-      userId_organizationId: { userId: targetUserId, organizationId: orgId },
+      userId_companyId: { userId: targetUserId, companyId },
     },
   });
   if (!membership) {
@@ -271,12 +271,12 @@ router.delete("/:orgSlug/members/:userId", authMiddleware, adminOrOwner, asyncHa
     return;
   }
 
-  await prisma.organizationMembership.delete({
+  await prisma.companyMembership.delete({
     where: {
-      userId_organizationId: { userId: targetUserId, organizationId: orgId },
+      userId_companyId: { userId: targetUserId, companyId },
     },
   });
   res.json({ ok: true });
 }));
 
-export { router as organizationRoutes };
+export { router as companyRoutes };

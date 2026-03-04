@@ -49,9 +49,9 @@ function formatUserWithMemberships(
     firstName: string;
     lastName: string;
     memberships: Array<{
-      organizationId: string;
+      companyId: string;
       role: string;
-      organization: {
+      company: {
         id: string;
         name: string;
         slug: string;
@@ -67,12 +67,20 @@ function formatUserWithMemberships(
     firstName: user.firstName,
     lastName: user.lastName,
     memberships: user.memberships.map((m) => ({
-      organizationId: m.organizationId,
-      organization: m.organization,
+      companyId: m.companyId,
+      company: m.company,
       role: m.role,
     })),
   };
 }
+
+const membershipSelect = {
+  companyId: true,
+  role: true,
+  company: {
+    select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
+  },
+} as const;
 
 router.post("/register", asyncHandler(async (req, res) => {
   try {
@@ -99,15 +107,7 @@ router.post("/register", asyncHandler(async (req, res) => {
         email: true,
         firstName: true,
         lastName: true,
-        memberships: {
-          select: {
-            organizationId: true,
-            role: true,
-            organization: {
-              select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
-            },
-          },
-        },
+        memberships: { select: membershipSelect },
       },
     });
 
@@ -153,15 +153,7 @@ router.post("/login", asyncHandler(async (req, res) => {
         hashedPassword: true,
         firstName: true,
         lastName: true,
-        memberships: {
-          select: {
-            organizationId: true,
-            role: true,
-            organization: {
-              select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
-            },
-          },
-        },
+        memberships: { select: membershipSelect },
       },
     });
     if (!user || !(await bcrypt.compare(data.password, user.hashedPassword))) {
@@ -269,15 +261,7 @@ router.get("/me", asyncHandler(async (req, res) => {
         email: true,
         firstName: true,
         lastName: true,
-        memberships: {
-          select: {
-            organizationId: true,
-            role: true,
-            organization: {
-              select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
-            },
-          },
-        },
+        memberships: { select: membershipSelect },
       },
     });
     if (!user) {

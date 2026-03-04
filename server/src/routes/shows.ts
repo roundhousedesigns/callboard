@@ -105,13 +105,13 @@ function formatDateOnly(date: Date): string {
 	return `${y}-${m}-${d}`;
 }
 
-async function deleteExpiredShowsWithoutAttendance(organizationId: string): Promise<void> {
+async function deleteExpiredShowsWithoutAttendance(companyId: string): Promise<void> {
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 
 	await prisma.show.deleteMany({
 		where: {
-			organizationId,
+			companyId,
 			activeAt: null,
 			date: { lt: today },
 			attendance: { none: {} },
@@ -120,14 +120,14 @@ async function deleteExpiredShowsWithoutAttendance(organizationId: string): Prom
 }
 
 router.get("/", async (req, res) => {
-  const orgId = req.organizationId!;
+  const orgId = req.companyId!;
   const start = req.query.start as string | undefined;
   const end = req.query.end as string | undefined;
 
   await deleteExpiredShowsWithoutAttendance(orgId);
 
-  const where: { organizationId: string; date?: { gte?: Date; lte?: Date } } = {
-    organizationId: orgId,
+  const where: { companyId: string; date?: { gte?: Date; lte?: Date } } = {
+    companyId: orgId,
   };
   if (start || end) {
     where.date = {};
@@ -145,13 +145,13 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const data = createShowSchema.parse(req.body);
-    const orgId = req.organizationId!;
+    const orgId = req.companyId!;
 
     const date = parseDateOnlyUTC(data.date);
 
     const show = await prisma.show.create({
       data: {
-        organizationId: orgId,
+        companyId: orgId,
         date,
         showTime: toHHmm(data.showTime),
       },
@@ -174,7 +174,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
       return;
     }
 
-    const orgId = req.organizationId!;
+    const orgId = req.companyId!;
     const skipDuplicates = (req.body.skipDuplicates ?? "true") === "true";
 
     const rows: { date: string; showTime: string }[] = [];
@@ -212,8 +212,8 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
 
       const existing = await prisma.show.findUnique({
         where: {
-          organizationId_date_showTime: {
-            organizationId: orgId,
+          companyId_date_showTime: {
+            companyId: orgId,
             date,
             showTime: row.showTime,
           },
@@ -228,7 +228,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
       } else {
         await prisma.show.create({
           data: {
-            organizationId: orgId,
+            companyId: orgId,
             date,
             showTime: toHHmm(row.showTime),
           },
@@ -252,7 +252,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
 router.post("/bulk-generate", async (req, res) => {
 	try {
 		const data = bulkGenerateShowSchema.parse(req.body);
-		const orgId = req.organizationId!;
+		const orgId = req.companyId!;
 
 		const start = parseDateOnlyUTC(data.startDate);
 		const end = parseDateOnlyUTC(data.endDate);
@@ -296,8 +296,8 @@ router.post("/bulk-generate", async (req, res) => {
 			for (const showTime of times) {
 				const existing = await prisma.show.findUnique({
 					where: {
-						organizationId_date_showTime: {
-							organizationId: orgId,
+						companyId_date_showTime: {
+							companyId: orgId,
 							date,
 							showTime,
 						},
@@ -312,7 +312,7 @@ router.post("/bulk-generate", async (req, res) => {
 				} else {
 					await prisma.show.create({
 						data: {
-							organizationId: orgId,
+							companyId: orgId,
 							date,
 							showTime,
 						},
@@ -338,9 +338,9 @@ router.post("/bulk-generate", async (req, res) => {
 });
 
 router.get("/active", async (req, res) => {
-	const orgId = req.organizationId!;
+	const orgId = req.companyId!;
 	const show = await prisma.show.findFirst({
-		where: { organizationId: orgId, activeAt: { not: null } },
+		where: { companyId: orgId, activeAt: { not: null } },
 		orderBy: { activeAt: "desc" },
 	});
 
@@ -356,9 +356,9 @@ router.get("/active", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const orgId = req.organizationId!;
+  const orgId = req.companyId!;
   const show = await prisma.show.findFirst({
-    where: { id: req.params.id, organizationId: orgId },
+    where: { id: req.params.id, companyId: orgId },
   });
   if (!show) {
     res.status(404).json({ error: "Show not found" });
@@ -370,10 +370,10 @@ router.get("/:id", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   try {
     const data = updateShowSchema.parse(req.body);
-    const orgId = req.organizationId!;
+    const orgId = req.companyId!;
 
     const existing = await prisma.show.findFirst({
-      where: { id: req.params.id, organizationId: orgId },
+      where: { id: req.params.id, companyId: orgId },
     });
     if (!existing) {
       res.status(404).json({ error: "Show not found" });
@@ -403,9 +403,9 @@ router.patch("/:id", async (req, res) => {
 });
 
 router.post("/:id/activate", async (req, res) => {
-  const orgId = req.organizationId!;
+  const orgId = req.companyId!;
   const show = await prisma.show.findFirst({
-    where: { id: req.params.id, organizationId: orgId },
+    where: { id: req.params.id, companyId: orgId },
   });
   if (!show) {
     res.status(404).json({ error: "Show not found" });
@@ -418,7 +418,7 @@ router.post("/:id/activate", async (req, res) => {
 
   await prisma.$transaction([
     prisma.show.updateMany({
-      where: { organizationId: orgId, id: { not: req.params.id } },
+      where: { companyId: orgId, id: { not: req.params.id } },
       data: { activeAt: null },
     }),
     prisma.show.update({
@@ -439,9 +439,9 @@ router.post("/:id/activate", async (req, res) => {
 });
 
 router.post("/:id/close-signin", async (req, res) => {
-  const orgId = req.organizationId!;
+  const orgId = req.companyId!;
   const show = await prisma.show.findFirst({
-    where: { id: req.params.id, organizationId: orgId },
+    where: { id: req.params.id, companyId: orgId },
   });
   if (!show) {
     res.status(404).json({ error: "Show not found" });
@@ -465,9 +465,9 @@ router.post("/:id/close-signin", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const orgId = req.organizationId!;
+  const orgId = req.companyId!;
   const show = await prisma.show.findFirst({
-    where: { id: req.params.id, organizationId: orgId },
+    where: { id: req.params.id, companyId: orgId },
   });
   if (!show) {
     res.status(404).json({ error: "Show not found" });

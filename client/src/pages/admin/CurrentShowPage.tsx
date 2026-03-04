@@ -24,10 +24,10 @@ export function CurrentShowPage() {
 	const isMobilePortrait = useIsMobilePortrait();
 
 	const displayTitle =
-		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Callboard';
+		membership?.company?.showTitle ?? membership?.company?.name ?? 'Callboard';
 
 	const load = useCallback(async (): Promise<CurrentShowCallboardData> => {
-		if (!orgSlug) throw new Error('No organization');
+		if (!orgSlug) throw new Error('No company');
 		const orgApi = api.org(orgSlug);
 		const show = await orgApi.get<Show | null>('/shows/active');
 		if (!show) {
