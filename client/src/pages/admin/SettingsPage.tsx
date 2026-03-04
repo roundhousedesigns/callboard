@@ -169,7 +169,7 @@ export function SettingsPage() {
 
 	if (loading) return <div className="muted">Loading...</div>;
 
-	const displayOrgName = membership?.organization?.name || 'Organization';
+	const displayOrgName = membership?.organization?.name || 'Company';
 	const isOwnerMember = membership?.role === 'owner';
 
 	return (

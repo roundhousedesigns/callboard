@@ -1,81 +1,20 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, type Membership } from '../lib/auth';
+import { useAuth } from '../lib/auth';
 import { api } from '../lib/api';
-import { Button, TextFieldInput } from '../components/ui';
-
-function OrganizationSettings({ membership, onDone }: { membership: Membership; onDone: () => void }) {
-	const { refresh } = useAuth();
-	const navigate = useNavigate();
-	const [organizationName, setOrganizationName] = useState(membership.organization.name);
-	const [saving, setSaving] = useState(false);
-	const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-	async function handleRename(e: React.FormEvent) {
-		e.preventDefault();
-		if (!organizationName.trim()) return;
-		setSaving(true);
-		setMessage(null);
-		try {
-			await api.patch(`/organizations/${membership.organization.slug}`, { name: organizationName.trim() });
-			await refresh();
-			setMessage({ type: 'success', text: 'Organization renamed.' });
-		} catch (err) {
-			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to rename' });
-		} finally {
-			setSaving(false);
-		}
-	}
-
-	async function handleDelete() {
-		if (!confirm(`Delete "${membership.organization.name}"? This cannot be undone.`)) return;
-		try {
-			await api.delete(`/organizations/${membership.organization.slug}`);
-			await refresh();
-			navigate('/account');
-			onDone();
-		} catch (err) {
-			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete' });
-		}
-	}
-
-	return (
-		<div className="stack">
-			<form onSubmit={handleRename} className="stack">
-				<TextFieldInput
-					label="Organization name"
-					value={organizationName}
-					onChange={setOrganizationName}
-					inputProps={{ placeholder: 'Organization name' }}
-				/>
-				{message && (
-					<div className={`alert ${message.type === 'error' ? 'alert--error' : 'alert--success'}`}>
-						{message.text}
-					</div>
-				)}
-				<Button type="submit" variant="primary" isDisabled={saving || !organizationName.trim()}>
-					{saving ? 'Saving...' : 'Rename organization'}
-				</Button>
-			</form>
-			<Button variant="danger" onPress={() => void handleDelete()}>
-				Delete organization
-			</Button>
-		</div>
-	);
-}
+import { Button } from '../components/ui';
 
 export function AccountPage() {
 	const { user, logout, refresh } = useAuth();
 	const navigate = useNavigate();
 	const [creating, setCreating] = useState(false);
 	const [error, setError] = useState('');
-	const [expandedOrgSlug, setExpandedOrgSlug] = useState<string | null>(null);
 
-	async function handleCreateOrganization() {
+	async function handleCreateCompany() {
 		setError('');
 		setCreating(true);
 		try {
-			const name = prompt('Organization name:');
+			const name = prompt('Company name:');
 			if (!name?.trim()) return;
 			const slug = name
 				.trim()
@@ -83,7 +22,7 @@ export function AccountPage() {
 				.replace(/\s+/g, '-')
 				.replace(/[^a-z0-9-]/g, '');
 			if (!slug) {
-				setError('Invalid organization name');
+				setError('Invalid company name');
 				return;
 			}
 			const org = await api.post<{ id: string; slug: string }>('/organizations', {
@@ -93,7 +32,7 @@ export function AccountPage() {
 			await refresh();
 			navigate(`/admin/${org.slug}`);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to create organization');
+			setError(err instanceof Error ? err.message : 'Failed to create company');
 		} finally {
 			setCreating(false);
 		}
@@ -123,18 +62,18 @@ export function AccountPage() {
 
 				{memberships.length === 0 ? (
 					<div>
-						<p>You have no organizations. Create one to get started.</p>
+						<p>You have no companies. Create one to get started.</p>
 						<Button
 							variant="primary"
-							onPress={() => void handleCreateOrganization()}
+							onPress={() => void handleCreateCompany()}
 							isDisabled={creating}
 						>
-							{creating ? 'Creating...' : 'Add Organization'}
+							{creating ? 'Creating...' : 'Add Company'}
 						</Button>
 					</div>
 				) : (
 					<div className="stack stack--md">
-						<h2 className="account-section-title">Your organizations</h2>
+						<h2 className="account-section-title">Your companies</h2>
 						<ul className="account-list">
 							{memberships.map((m) => (
 								<li key={m.organizationId} className="account-item">
@@ -182,44 +121,17 @@ export function AccountPage() {
 											</Button>
 										)}
 									</div>
-									{m.role === 'owner' && expandedOrgSlug === m.organization.slug && (
-										<div className="account-item__settings">
-											<OrganizationSettings
-												membership={m}
-												onDone={() => setExpandedOrgSlug(null)}
-											/>
-										</div>
-									)}
 								</li>
 							))}
 						</ul>
 						<Button
 							variant="primary"
-							onPress={() => void handleCreateOrganization()}
+							onPress={() => void handleCreateCompany()}
 							isDisabled={creating}
 						>
-							{creating ? 'Creating...' : 'Add Organization'}
+							{creating ? 'Creating...' : 'Add Company'}
 						</Button>
 					</div>
-				)}
-
-				{memberships.some((m) => m.role === 'owner') && (
-					<Button
-						size="sm"
-						variant="ghost"
-						onPress={() => {
-							const ownerMembership = memberships.find((m) => m.role === 'owner');
-							if (ownerMembership) {
-								setExpandedOrgSlug((prev) =>
-									prev === ownerMembership.organization.slug ? null : ownerMembership.organization.slug
-								);
-							}
-						}}
-					>
-						{memberships.some((m) => m.role === 'owner' && expandedOrgSlug === m.organization.slug)
-							? 'Cancel'
-							: 'Organization settings'}
-					</Button>
 				)}
 
 				<Button variant="ghost" onPress={() => void handleLogout()}>

@@ -75,7 +75,7 @@ export function AdminLayout() {
 				>
 					<div className="app-sidebar__brand">
 						<div>
-							<p className="app-sidebar__title">Organization</p>
+							<p className="app-sidebar__title">Company</p>
 							<p className="app-sidebar__subtitle">{orgName}</p>
 						</div>
 						<button
