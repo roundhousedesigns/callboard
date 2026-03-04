@@ -7,7 +7,7 @@ import { ActiveShowCallboard } from '../../components/ActiveShowCallboard';
 
 interface SignInResult {
 	success: boolean;
-	show?: { date: string; showTime: string };
+	show?: { date: string; showTime: string; orgSlug?: string };
 }
 
 export function SignInLandingPage() {
@@ -28,11 +28,6 @@ export function SignInLandingPage() {
 			return;
 		}
 
-		if (user.role !== 'actor') {
-			navigate('/admin', { replace: true });
-			return;
-		}
-
 		let cancelled = false;
 		api
 			.get<SignInResult>(`/sign-in/${token}`)
@@ -40,7 +35,14 @@ export function SignInLandingPage() {
 				if (!cancelled) setResult(data);
 			})
 			.catch((err) => {
-				if (!cancelled) setError(err instanceof Error ? err.message : 'Sign-in failed');
+				if (!cancelled) {
+					const msg = err instanceof Error ? err.message : 'Sign-in failed';
+					if (msg.toLowerCase().includes('not an actor')) {
+						navigate('/account', { replace: true });
+						return;
+					}
+					setError(msg);
+				}
 			});
 
 		return () => {
@@ -77,6 +79,8 @@ export function SignInLandingPage() {
 		? `${new Date(result.show.date).toLocaleDateString()} - ${formatShowTime(result.show.showTime)}`
 		: 'this show';
 
+	const orgSlug = result?.show?.orgSlug;
+
 	return (
 		<div className="auth-shell">
 			<div className="stack" style={{ width: 'min(70rem, 100%)', margin: '0 auto' }}>
@@ -86,7 +90,9 @@ export function SignInLandingPage() {
 						{`Successfully signed in for ${showLabel}.`}
 					</p>
 				</div>
-				<ActiveShowCallboard heading="Current callboard" />
+				{orgSlug && (
+					<ActiveShowCallboard orgSlug={orgSlug} heading="Current callboard" />
+				)}
 			</div>
 		</div>
 	);

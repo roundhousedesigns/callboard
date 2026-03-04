@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../lib/auth';
+import { useParams } from 'react-router-dom';
+import { useAuth, getMembership } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
-import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
 import {
 	toLocalDateStr,
@@ -31,9 +31,19 @@ function fromLocalDateStr(yyyyMmDd: string): Date {
 	return new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
+interface OrgMember {
+	id: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	role: string;
+}
+
 export function CallboardPage() {
+	const { orgSlug } = useParams<{ orgSlug: string }>();
 	const { user } = useAuth();
-	const [actors, setActors] = useState<User[]>([]);
+	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
+	const [actors, setActors] = useState<OrgMember[]>([]);
 	const [shows, setShows] = useState<Show[]>([]);
 	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -44,7 +54,7 @@ export function CallboardPage() {
 	const isMobilePortrait = useIsMobilePortrait();
 
 	const showsPerWeek = 8;
-	const weekStartsOn = user?.organization?.weekStartsOn ?? 0;
+	const weekStartsOn = membership?.organization?.weekStartsOn ?? 0;
 
 	useEffect(() => {
 		const thisWeek = getThisWeekRange(weekStartsOn);
@@ -53,14 +63,15 @@ export function CallboardPage() {
 	}, [weekStartsOn]);
 
 	const loadData = async (showLoading = true) => {
-		if (!dateRange.start) return;
+		if (!dateRange.start || !orgSlug) return;
 		const useFullLoading = showLoading && !hasLoadedOnceRef.current;
 		if (useFullLoading) setLoading(true);
 		else setRefreshing(true);
+		const orgApi = api.org(orgSlug);
 		try {
 			const [usersRes, showsRes] = await Promise.all([
-				api.get<User[]>('/users'),
-				api.get<Show[]>(
+				orgApi.get<OrgMember[]>('/users'),
+				orgApi.get<Show[]>(
 					`/shows?start=${dateRange.start || '1970-01-01'}&end=${dateRange.end || '2099-12-31'}`,
 				),
 			]);
@@ -77,7 +88,7 @@ export function CallboardPage() {
 			const allAttendance: AttendanceRecord[] = [];
 			const showsToUse = showsInRange.slice(0, showsPerWeek);
 			for (const show of showsToUse) {
-				const att = await api.get<Array<{ userId: string; showId: string; status: string }>>(
+				const att = await orgApi.get<Array<{ userId: string; showId: string; status: string }>>(
 					`/attendance?showId=${show.id}`,
 				);
 				allAttendance.push(
@@ -100,7 +111,7 @@ export function CallboardPage() {
 
 	useEffect(() => {
 		void loadData(true);
-	}, [dateRange.start, dateRange.end]);
+	}, [dateRange.start, dateRange.end, orgSlug]);
 
 	useEffect(() => {
 		if (!dateRange.start) return;
@@ -112,19 +123,20 @@ export function CallboardPage() {
 		return () => {
 			clearInterval(interval);
 		};
-	}, [dateRange.start, dateRange.end]);
+	}, [dateRange.start, dateRange.end, orgSlug]);
 
 	async function handleSetStatus(
 		userId: string,
 		showId: string,
 		status: AttendanceRecord['status'] | null,
 	) {
+		if (!orgSlug) return;
 		try {
 			if (status === null) {
-				await api.delete(`/attendance?userId=${userId}&showId=${showId}`);
+				await api.org(orgSlug).delete(`/attendance?userId=${userId}&showId=${showId}`);
 				setAttendance((prev) => prev.filter((a) => !(a.userId === userId && a.showId === showId)));
 			} else {
-				await api.post('/attendance', { userId, showId, status });
+				await api.org(orgSlug).post('/attendance', { userId, showId, status });
 				setAttendance((prev) => {
 					const rest = prev.filter((a) => !(a.userId === userId && a.showId === showId));
 					return [...rest, { userId, showId, status }];
@@ -166,7 +178,7 @@ export function CallboardPage() {
 	}
 
 	const displayTitle =
-		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
+		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Callboard';
 
 	const isDraftDirty = draftRange.start !== dateRange.start || draftRange.end !== dateRange.end;
 
@@ -259,6 +271,7 @@ export function CallboardPage() {
 				actors={actors}
 				shows={shows}
 				attendance={attendance}
+				orgSlug={orgSlug ?? undefined}
 				onSetStatus={(userId, showId, status) => {
 					void handleSetStatus(userId, showId, status);
 				}}

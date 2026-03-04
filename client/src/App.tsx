@@ -1,6 +1,7 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './lib/auth';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { useAuth, hasAdminAccess, hasActorAccess } from './lib/auth';
 import { LoginPage } from './pages/LoginPage';
+import { AccountPage } from './pages/AccountPage';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { CallboardPage } from './pages/admin/CallboardPage';
 import { CurrentShowPage } from './pages/admin/CurrentShowPage';
@@ -14,11 +15,32 @@ import { PastShowSheetPage } from './pages/admin/PastShowSheetPage';
 import { SignInLandingPage } from './pages/actor/SignInLandingPage';
 import { ActorCallboardPage } from './pages/actor/ActorCallboardPage';
 
-function ProtectedAdmin({ children }: { children: React.ReactNode }) {
+function ProtectedAccount({ children }: { children: React.ReactNode }) {
 	const { user, loading } = useAuth();
 	if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
 	if (!user) return <Navigate to="/login" replace />;
-	if (user.role !== 'admin') return <Navigate to="/actor" replace />;
+	return <>{children}</>;
+}
+
+function ProtectedOrgAdmin({ children }: { children: React.ReactNode }) {
+	const { user, loading } = useAuth();
+	const { orgSlug } = useParams<{ orgSlug: string }>();
+	if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
+	if (!user) return <Navigate to="/login" replace />;
+	if (!orgSlug || !hasAdminAccess(user, orgSlug)) {
+		return <Navigate to="/account" replace />;
+	}
+	return <>{children}</>;
+}
+
+function ProtectedOrgActor({ children }: { children: React.ReactNode }) {
+	const { user, loading } = useAuth();
+	const { orgSlug } = useParams<{ orgSlug: string }>();
+	if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
+	if (!user) return <Navigate to="/login" replace />;
+	if (!orgSlug || !hasActorAccess(user, orgSlug)) {
+		return <Navigate to="/account" replace />;
+	}
 	return <>{children}</>;
 }
 
@@ -26,16 +48,7 @@ function HomeRedirect() {
 	const { user, loading } = useAuth();
 	if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
 	if (!user) return <Navigate to="/login" replace />;
-	if (user.role === 'admin') return <Navigate to="/admin" replace />;
-	return <Navigate to="/actor" replace />;
-}
-
-function ProtectedActor({ children }: { children: React.ReactNode }) {
-	const { user, loading } = useAuth();
-	if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
-	if (!user) return <Navigate to="/login" replace />;
-	if (user.role !== 'actor') return <Navigate to="/admin" replace />;
-	return <>{children}</>;
+	return <Navigate to="/account" replace />;
 }
 
 export default function App() {
@@ -44,11 +57,19 @@ export default function App() {
 			<Route path="/login" element={<LoginPage />} />
 			<Route path="/s/:token" element={<SignInLandingPage />} />
 			<Route
-				path="/admin"
+				path="/account"
 				element={
-					<ProtectedAdmin>
+					<ProtectedAccount>
+						<AccountPage />
+					</ProtectedAccount>
+				}
+			/>
+			<Route
+				path="/admin/:orgSlug"
+				element={
+					<ProtectedOrgAdmin>
 						<AdminLayout />
-					</ProtectedAdmin>
+					</ProtectedOrgAdmin>
 				}
 			>
 				<Route index element={<CallboardPage />} />
@@ -62,11 +83,11 @@ export default function App() {
 				<Route path="settings" element={<SettingsPage />} />
 			</Route>
 			<Route
-				path="/actor"
+				path="/actor/:orgSlug"
 				element={
-					<ProtectedActor>
+					<ProtectedOrgActor>
 						<ActorCallboardPage />
-					</ProtectedActor>
+					</ProtectedOrgActor>
 				}
 			/>
 			<Route path="/" element={<HomeRedirect />} />

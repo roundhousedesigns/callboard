@@ -1,17 +1,15 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { authMiddleware, actorOnly } from "../middleware/auth.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = Router();
 
-// Actors may only sign themselves in via this endpoint when visiting a URL that
-// contains the show's sign-in token (e.g. from scanning the QR code). Do not
-// add any "auto sign-in to active show" on login or when visiting /actor.
-router.get("/:token", authMiddleware, actorOnly, async (req, res) => {
+router.get("/:token", authMiddleware, async (req, res) => {
   const token = req.params.token;
 
   const show = await prisma.show.findUnique({
     where: { signInToken: token },
+    include: { organization: { select: { slug: true } } },
   });
 
   if (!show) {
@@ -28,8 +26,17 @@ router.get("/:token", authMiddleware, actorOnly, async (req, res) => {
   }
 
   const userId = req.user!.id;
-  if (req.user!.organizationId !== show.organizationId) {
-    res.status(403).json({ error: "You are not in this organization" });
+  const membership = await prisma.organizationMembership.findUnique({
+    where: {
+      userId_organizationId: {
+        userId,
+        organizationId: show.organizationId,
+      },
+    },
+    select: { role: true },
+  });
+  if (!membership || membership.role !== "actor") {
+    res.status(403).json({ error: "You are not an actor in this organization" });
     return;
   }
 
@@ -42,7 +49,7 @@ router.get("/:token", authMiddleware, actorOnly, async (req, res) => {
     res.json({
       success: true,
       alreadySignedIn: true,
-      show: { date: show.date, showTime: show.showTime },
+      show: { date: show.date, showTime: show.showTime, orgSlug: show.organization.slug },
     });
     return;
   }
@@ -59,7 +66,7 @@ router.get("/:token", authMiddleware, actorOnly, async (req, res) => {
   res.json({
     success: true,
     alreadySignedIn: false,
-    show: { date: show.date, showTime: show.showTime },
+    show: { date: show.date, showTime: show.showTime, orgSlug: show.organization.slug },
   });
 });
 

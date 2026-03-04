@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { useAuth, type User } from '../../lib/auth';
+import { useAuth, getMembership } from '../../lib/auth';
 import {
 	CurrentShowCallboard,
 	type CurrentShowCallboardData,
@@ -8,23 +9,35 @@ import {
 import type { AttendanceRecord, Show } from '../../components/CallboardTable';
 import { useIsMobilePortrait } from '../../lib/useIsMobilePortrait';
 
+interface OrgMember {
+	id: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	role: string;
+}
+
 export function CurrentShowPage() {
+	const { orgSlug } = useParams<{ orgSlug: string }>();
 	const { user } = useAuth();
+	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
 	const isMobilePortrait = useIsMobilePortrait();
 
 	const displayTitle =
-		user?.organization?.showTitle ?? user?.organization?.name ?? 'Callboard';
+		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Callboard';
 
 	const load = useCallback(async (): Promise<CurrentShowCallboardData> => {
-		const show = await api.get<Show | null>('/shows/active');
+		if (!orgSlug) throw new Error('No organization');
+		const orgApi = api.org(orgSlug);
+		const show = await orgApi.get<Show | null>('/shows/active');
 		if (!show) {
 			throw new Error('No active show');
 		}
-		const users = await api.get<User[]>('/users');
+		const users = await orgApi.get<OrgMember[]>('/users');
 		const actors = users
 			.filter((u) => u.role === 'actor')
 			.map((u) => ({ id: u.id, firstName: u.firstName, lastName: u.lastName }));
-		const attendance = await api.get<Array<{ userId: string; showId: string; status: string }>>(
+		const attendance = await orgApi.get<Array<{ userId: string; showId: string; status: string }>>(
 			`/attendance?showId=${show.id}`,
 		);
 
@@ -37,7 +50,7 @@ export function CurrentShowPage() {
 				status: a.status as AttendanceRecord['status'],
 			})),
 		};
-	}, []);
+	}, [orgSlug]);
 
 	const handleSetStatus = useCallback(
 		async (
@@ -45,13 +58,14 @@ export function CurrentShowPage() {
 			showId: string,
 			status: AttendanceRecord['status'] | null,
 		) => {
+			if (!orgSlug) return;
 			if (status === null) {
-				await api.delete(`/attendance?userId=${userId}&showId=${showId}`);
+				await api.org(orgSlug).delete(`/attendance?userId=${userId}&showId=${showId}`);
 			} else {
-				await api.post('/attendance', { userId, showId, status });
+				await api.org(orgSlug).post('/attendance', { userId, showId, status });
 			}
 		},
-		[],
+		[orgSlug],
 	);
 	const handleSetStatusVoid = useCallback(
 		(userId: string, showId: string, status: AttendanceRecord['status'] | null) => {
@@ -73,8 +87,8 @@ export function CurrentShowPage() {
 				load={load}
 				onSetStatus={handleSetStatusVoid}
 				mobilePortrait={isMobilePortrait}
+				orgSlug={orgSlug}
 			/>
 		</div>
 	);
 }
-

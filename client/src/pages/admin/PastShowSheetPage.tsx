@@ -1,26 +1,35 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useAuth } from '../../lib/auth';
+import { useAuth, getMembership } from '../../lib/auth';
 import { CallboardTable, type AttendanceRecord, type Show } from '../../components/CallboardTable';
 import { api } from '../../lib/api';
-import type { User } from '../../lib/auth';
 import { formatShowTime } from '../../lib/dateUtils';
 
+interface OrgMember {
+	id: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	role: string;
+}
+
 export function PastShowSheetPage() {
-	const { showId } = useParams<{ showId: string }>();
+	const { orgSlug, showId } = useParams<{ orgSlug: string; showId: string }>();
 	const { user } = useAuth();
+	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
 	const [show, setShow] = useState<Show | null>(null);
-	const [actors, setActors] = useState<User[]>([]);
+	const [actors, setActors] = useState<OrgMember[]>([]);
 	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!showId) return;
+		if (!showId || !orgSlug) return;
+		const orgApi = api.org(orgSlug);
 		Promise.all([
-			api.get<Show>(`/shows/${showId}`),
-			api.get<User[]>('/users'),
-			api.get<Array<{ userId: string; showId: string; status: string }>>(
+			orgApi.get<Show>(`/shows/${showId}`),
+			orgApi.get<OrgMember[]>('/users'),
+			orgApi.get<Array<{ userId: string; showId: string; status: string }>>(
 				`/attendance?showId=${showId}`,
 			),
 		])
@@ -37,22 +46,23 @@ export function PastShowSheetPage() {
 			})
 			.catch((err) => setError(err instanceof Error ? err.message : 'Failed to load'))
 			.finally(() => setLoading(false));
-	}, [showId]);
+	}, [showId, orgSlug]);
 
 	async function handleSetStatus(
 		userId: string,
 		showIdValue: string,
 		status: AttendanceRecord['status'] | null,
 	) {
+		if (!orgSlug) return;
 		try {
 			if (status === null) {
-				await api.delete(`/attendance?userId=${userId}&showId=${showIdValue}`);
+				await api.org(orgSlug).delete(`/attendance?userId=${userId}&showId=${showIdValue}`);
 				setAttendance((prev) =>
 					prev.filter((a) => !(a.userId === userId && a.showId === showIdValue)),
 				);
 				return;
 			}
-			await api.post('/attendance', { userId, showId: showIdValue, status });
+			await api.org(orgSlug).post('/attendance', { userId, showId: showIdValue, status });
 			setAttendance((prev) => {
 				const rest = prev.filter((a) => !(a.userId === userId && a.showId === showIdValue));
 				return [...rest, { userId, showId: showIdValue, status }];
@@ -67,7 +77,7 @@ export function PastShowSheetPage() {
 	if (!show) return <div className="alert">Show not found.</div>;
 
 	const displayTitle =
-		user?.organization?.showTitle ?? user?.organization?.name ?? 'Sign-in sheet corrections';
+		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Sign-in sheet corrections';
 
 	return (
 		<div>
@@ -77,7 +87,7 @@ export function PastShowSheetPage() {
 					<p className="page-subtitle">Sign-in sheet corrections</p>
 				</div>
 				<div className="no-print">
-					<Link className="btn btn--sm btn--ghost" to="/admin/shows">
+					<Link className="btn btn--sm btn--ghost" to={orgSlug ? `/admin/${orgSlug}/shows` : '#'}>
 						Back to shows
 					</Link>
 				</div>

@@ -1,20 +1,16 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { authMiddleware, adminOnly } from "../middleware/auth.js";
 import { prisma } from "../db.js";
 
-const router = Router();
-
-router.use(authMiddleware);
-router.use(adminOnly);
+const router = Router({ mergeParams: true });
 
 const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  role: z.enum(["admin", "actor"]),
+  role: z.enum(["owner", "admin", "actor"]),
 });
 
 const updateUserSchema = z.object({
@@ -25,50 +21,87 @@ const updateUserSchema = z.object({
 });
 
 router.get("/", async (req, res) => {
-  const orgId = req.user!.organizationId;
-  const users = await prisma.user.findMany({
+  const orgId = req.organizationId!;
+  const memberships = await prisma.organizationMembership.findMany({
     where: { organizationId: orgId },
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
-  res.json(users);
+  res.json(
+    memberships.map((m) => ({
+      ...m.user,
+      role: m.role,
+    }))
+  );
 });
 
 router.post("/", async (req, res) => {
   try {
     const data = createUserSchema.parse(req.body);
-    const orgId = req.user!.organizationId;
+    const orgId = req.organizationId!;
+    const membershipRole = req.membershipRole!;
 
-    const existing = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
-    if (existing) {
-      res.status(400).json({ error: "Email already registered" });
+    if (data.role === "owner" && membershipRole !== "owner") {
+      res.status(403).json({ error: "Only owners can add other owners" });
+      return;
+    }
+    if (data.role === "admin" && membershipRole === "admin") {
+      res.status(403).json({ error: "Admins cannot add other admins" });
       return;
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 12);
-    const user = await prisma.user.create({
-      data: {
-        ...data,
-        hashedPassword,
-        organizationId: orgId,
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
+    let user = await prisma.user.findUnique({
+      where: { email: data.email },
+    });
+    if (!user) {
+      const hashedPassword = await bcrypt.hash(data.password, 12);
+      user = await prisma.user.create({
+        data: {
+          email: data.email,
+          hashedPassword,
+          firstName: data.firstName,
+          lastName: data.lastName,
+        },
+      });
+    }
+
+    const existing = await prisma.organizationMembership.findUnique({
+      where: {
+        userId_organizationId: { userId: user.id, organizationId: orgId },
       },
     });
-    res.status(201).json(user);
+    if (existing) {
+      res.status(400).json({ error: "User is already a member of this organization" });
+      return;
+    }
+
+    await prisma.organizationMembership.create({
+      data: {
+        userId: user.id,
+        organizationId: orgId,
+        role: data.role,
+      },
+    });
+
+    const membership = await prisma.organizationMembership.findUniqueOrThrow({
+      where: {
+        userId_organizationId: { userId: user.id, organizationId: orgId },
+      },
+      include: {
+        user: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
+      },
+    });
+    res.status(201).json({ ...membership.user, role: membership.role });
   } catch (err) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: err.errors[0]?.message ?? "Invalid input" });
@@ -79,33 +112,35 @@ router.post("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const orgId = req.user!.organizationId;
-  const user = await prisma.user.findFirst({
-    where: { id: req.params.id, organizationId: orgId },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
+  const orgId = req.organizationId!;
+  const membership = await prisma.organizationMembership.findUnique({
+    where: {
+      userId_organizationId: { userId: req.params.id, organizationId: orgId },
+    },
+    include: {
+      user: {
+        select: { id: true, email: true, firstName: true, lastName: true },
+      },
     },
   });
-  if (!user) {
+  if (!membership) {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  res.json(user);
+  res.json({ ...membership.user, role: membership.role });
 });
 
 router.patch("/:id", async (req, res) => {
   try {
     const data = updateUserSchema.parse(req.body);
-    const orgId = req.user!.organizationId;
+    const orgId = req.organizationId!;
 
-    const existing = await prisma.user.findFirst({
-      where: { id: req.params.id, organizationId: orgId },
+    const membership = await prisma.organizationMembership.findUnique({
+      where: {
+        userId_organizationId: { userId: req.params.id, organizationId: orgId },
+      },
     });
-    if (!existing) {
+    if (!membership) {
       res.status(404).json({ error: "User not found" });
       return;
     }
@@ -119,15 +154,9 @@ router.patch("/:id", async (req, res) => {
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: updateData,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-      },
+      select: { id: true, email: true, firstName: true, lastName: true },
     });
-    res.json(user);
+    res.json({ ...user, role: membership.role });
   } catch (err) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: err.errors[0]?.message ?? "Invalid input" });
@@ -138,15 +167,21 @@ router.patch("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const orgId = req.user!.organizationId;
-  const user = await prisma.user.findFirst({
-    where: { id: req.params.id, organizationId: orgId },
+  const orgId = req.organizationId!;
+  const membership = await prisma.organizationMembership.findUnique({
+    where: {
+      userId_organizationId: { userId: req.params.id, organizationId: orgId },
+    },
   });
-  if (!user) {
+  if (!membership) {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  await prisma.user.delete({ where: { id: req.params.id } });
+  await prisma.organizationMembership.delete({
+    where: {
+      userId_organizationId: { userId: req.params.id, organizationId: orgId },
+    },
+  });
   res.json({ ok: true });
 });
 

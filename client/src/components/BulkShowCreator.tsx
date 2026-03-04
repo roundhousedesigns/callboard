@@ -13,6 +13,7 @@ interface BulkShowResult {
 }
 
 interface BulkShowCreatorProps {
+	orgSlug: string;
 	onCreated?: () => void | Promise<void>;
 	triggerLabel?: string;
 	triggerVariant?: ButtonProps['variant'];
@@ -66,6 +67,7 @@ function getTimeInputId(weekdayKey: string, index: number): string {
 }
 
 export function BulkShowCreator({
+	orgSlug,
 	onCreated,
 	triggerLabel = 'Bulk create shows',
 	triggerVariant = 'default',
@@ -175,7 +177,7 @@ export function BulkShowCreator({
 				]),
 			);
 
-			const response = await api.post<BulkShowResult>('/shows/bulk-generate', {
+			const response = await api.org(orgSlug).post<BulkShowResult>('/shows/bulk-generate', {
 				startDate,
 				endDate,
 				weekdayTimes: payloadWeekdayTimes,

@@ -12,8 +12,7 @@ export function LoginPage() {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const redirect = searchParams.get('redirect');
-	// Actors go to /actor; never auto sign them into the active show (they must use the QR flow).
-	const defaultRedirect = user?.role === 'admin' ? '/admin' : '/actor';
+	const defaultRedirect = '/account';
 
 	useEffect(() => {
 		if (!user) return;
@@ -27,8 +26,8 @@ export function LoginPage() {
 		setError('');
 		setLoading(true);
 		try {
-			const u = await login(email, password);
-			const target = redirect ?? (u.role === 'admin' ? '/admin' : '/actor');
+			await login(email, password);
+			const target = redirect ?? '/account';
 			navigate(target, { replace: true });
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Login failed');

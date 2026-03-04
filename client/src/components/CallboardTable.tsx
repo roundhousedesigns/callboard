@@ -40,6 +40,8 @@ interface CallboardTableProps {
 	/** When true, visually highlights the next upcoming show column */
 	highlightNextUpcoming?: boolean;
 	mobilePortrait?: boolean;
+	/** Org slug for admin QR links. Omit for actor/read-only views. */
+	orgSlug?: string;
 }
 
 const statusColors: Record<AttendanceRecord['status'], string> = {
@@ -165,6 +167,7 @@ function getShowDateTime(show: Show): number {
 export function CallboardTable({
 	actors,
 	shows,
+	orgSlug,
 	attendance,
 	onSetStatus,
 	readOnly = false,
@@ -259,9 +262,9 @@ export function CallboardTable({
 									</span>
 									<span className="callboard-mobile-card__title">{formatShowLabel(show)}</span>
 								</button>
-								{activeShow && !readOnly && (
+								{activeShow && !readOnly && orgSlug && (
 									<Link
-										to="/admin/qr"
+										to={`/admin/${orgSlug}/qr`}
 										aria-label="Open QR code"
 										title="Open QR code"
 										className="nav-link nav-link--icon nav-link--qr no-print"
@@ -336,9 +339,9 @@ export function CallboardTable({
 									<br />
 									<span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>
 										{timeLabel}
-										{isActiveShow && !readOnly && (
+										{isActiveShow && !readOnly && orgSlug && (
 											<Link
-												to="/admin/qr"
+												to={`/admin/${orgSlug}/qr`}
 												title="Open QR code"
 												className="btn btn--sm btn--ghost no-print"
 												style={{ padding: '0.2rem 0.35rem', marginLeft: '0.25rem' }}

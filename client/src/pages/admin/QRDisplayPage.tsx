@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
@@ -14,12 +15,15 @@ interface Show {
 }
 
 export function QRDisplayPage() {
+	const { orgSlug } = useParams<{ orgSlug: string }>();
 	const [show, setShow] = useState<Show | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	function loadActiveShow() {
+		if (!orgSlug) return;
 		setError(null);
 		api
+			.org(orgSlug)
 			.get<Show | null>('/shows/active')
 			.then((s) => {
 				if (!s) {
@@ -37,7 +41,7 @@ export function QRDisplayPage() {
 
 	useEffect(() => {
 		loadActiveShow();
-	}, []);
+	}, [orgSlug]);
 
 	if (error) {
 		const isNoActive = error.toLowerCase().includes('no active show');

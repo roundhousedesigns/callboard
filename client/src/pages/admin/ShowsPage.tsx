@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { formatShowTime, toLocalDateStr } from '../../lib/dateUtils';
 import { Button, TextFieldInput } from '../../components/ui';
@@ -39,26 +39,28 @@ interface Show {
 }
 
 export function ShowsPage() {
+	const { orgSlug } = useParams<{ orgSlug: string }>();
 	const [shows, setShows] = useState<Show[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [form, setForm] = useState({ date: '', showTime: '' });
 	const [editingShowId, setEditingShowId] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState({ date: '', showTime: '' });
 	const loadShows = useCallback(async () => {
+		if (!orgSlug) return;
 		setLoading(true);
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 		const todayStr = toLocalDateStr(today);
 
 		try {
-			const nextShows = await api.get<Show[]>(`/shows?start=${todayStr}`);
+			const nextShows = await api.org(orgSlug).get<Show[]>(`/shows?start=${todayStr}`);
 			setShows(nextShows);
 		} catch (err) {
 			console.error(err);
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [orgSlug]);
 
 	useEffect(() => {
 		void loadShows();
@@ -66,8 +68,9 @@ export function ShowsPage() {
 
 	async function handleCreate(e: React.FormEvent) {
 		e.preventDefault();
+		if (!orgSlug) return;
 		try {
-			const show = await api.post<Show>('/shows', form);
+			const show = await api.org(orgSlug).post<Show>('/shows', form);
 			setShows((prev) =>
 				[...prev, show].sort(
 					(a, b) =>
@@ -82,8 +85,9 @@ export function ShowsPage() {
 	}
 
 	async function handleActivate(id: string) {
+		if (!orgSlug) return;
 		try {
-			const updated = await api.post<Show>(`/shows/${id}/activate`);
+			const updated = await api.org(orgSlug).post<Show>(`/shows/${id}/activate`);
 			setShows((prev) => prev.map((s) => (s.id === id ? updated : { ...s, activeAt: null })));
 		} catch (err) {
 			alert(err instanceof Error ? err.message : 'Failed');
@@ -91,8 +95,9 @@ export function ShowsPage() {
 	}
 
 	async function handleCloseSignIn(id: string) {
+		if (!orgSlug) return;
 		try {
-			const updated = await api.post<Show>(`/shows/${id}/close-signin`);
+			const updated = await api.org(orgSlug).post<Show>(`/shows/${id}/close-signin`);
 			setShows((prev) => prev.map((s) => (s.id === id ? updated : s)));
 		} catch (err) {
 			alert(err instanceof Error ? err.message : 'Failed');
@@ -101,8 +106,9 @@ export function ShowsPage() {
 
 	async function handleDelete(id: string) {
 		if (!confirm('Delete this show?')) return;
+		if (!orgSlug) return;
 		try {
-			await api.delete(`/shows/${id}`);
+			await api.org(orgSlug).delete(`/shows/${id}`);
 			setShows((prev) => prev.filter((s) => s.id !== id));
 		} catch (err) {
 			alert(err instanceof Error ? err.message : 'Failed');
@@ -122,8 +128,9 @@ export function ShowsPage() {
 	}
 
 	async function handleSaveEdit(id: string) {
+		if (!orgSlug) return;
 		try {
-			const updated = await api.patch<Show>(`/shows/${id}`, editForm);
+			const updated = await api.org(orgSlug).patch<Show>(`/shows/${id}`, editForm);
 			setShows((prev) =>
 				prev
 					.map((s) => (s.id === id ? updated : s))
@@ -178,6 +185,7 @@ export function ShowsPage() {
 						Open next show
 					</Button>
 					<BulkShowCreator
+						orgSlug={orgSlug ?? ''}
 						triggerLabel="Build schedule"
 						triggerVariant="primary"
 						onCreated={async () => {
@@ -327,7 +335,7 @@ export function ShowsPage() {
 												{show.activeAt ? (
 													<>
 														<Link
-															to="/admin/qr"
+															to={orgSlug ? `/admin/${orgSlug}/qr` : '#'}
 															aria-label="Open QR code"
 															className="btn btn--sm btn--ghost"
 															style={{ padding: '0.35rem 0.5rem' }}

@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
-import type { User } from '../../lib/auth';
+import { useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { Button, TextFieldInput } from '../../components/ui';
 
+interface OrgMember {
+	id: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	role: string;
+}
+
 export function ActorsPage() {
-	const [actors, setActors] = useState<User[]>([]);
+	const { orgSlug } = useParams<{ orgSlug: string }>();
+	const [actors, setActors] = useState<OrgMember[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [editing, setEditing] = useState<string | null>(null);
 	const [editForm, setEditForm] = useState({
@@ -21,17 +30,20 @@ export function ActorsPage() {
 	});
 
 	useEffect(() => {
+		if (!orgSlug) return;
 		api
-			.get<User[]>('/users')
+			.org(orgSlug)
+			.get<OrgMember[]>('/users')
 			.then((users) => setActors(users.filter((u) => u.role === 'actor')))
 			.catch(console.error)
 			.finally(() => setLoading(false));
-	}, []);
+	}, [orgSlug]);
 
 	async function handleCreate(e: React.FormEvent) {
 		e.preventDefault();
+		if (!orgSlug) return;
 		try {
-			const user = await api.post<User>('/users', {
+			const user = await api.org(orgSlug).post<OrgMember>('/users', {
 				...form,
 				role: 'actor',
 			});
@@ -42,7 +54,7 @@ export function ActorsPage() {
 		}
 	}
 
-	function startEdit(actor: User) {
+	function startEdit(actor: OrgMember) {
 		setEditing(actor.id);
 		setEditForm({
 			email: actor.email,
@@ -53,6 +65,7 @@ export function ActorsPage() {
 	}
 
 	async function handleUpdate(id: string) {
+		if (!orgSlug) return;
 		try {
 			const payload: Record<string, string> = {
 				email: editForm.email,
@@ -60,7 +73,7 @@ export function ActorsPage() {
 				lastName: editForm.lastName,
 			};
 			if (editForm.password) payload.password = editForm.password;
-			const user = await api.patch<User>(`/users/${id}`, payload);
+			const user = await api.org(orgSlug).patch<OrgMember>(`/users/${id}`, payload);
 			setActors((prev) =>
 				prev
 					.map((a) => (a.id === id ? user : a))
@@ -74,8 +87,9 @@ export function ActorsPage() {
 
 	async function handleDelete(id: string) {
 		if (!confirm('Delete this actor?')) return;
+		if (!orgSlug) return;
 		try {
-			await api.delete(`/users/${id}`);
+			await api.org(orgSlug).delete(`/users/${id}`);
 			setActors((prev) => prev.filter((a) => a.id !== id));
 		} catch (err) {
 			alert(err instanceof Error ? err.message : 'Failed');

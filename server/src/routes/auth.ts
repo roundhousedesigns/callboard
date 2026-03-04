@@ -17,9 +17,6 @@ const registerSchema = z.object({
   password: z.string().min(8),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  role: z.enum(["admin", "actor"]),
-  organizationId: z.string().optional(),
-  organizationSlug: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -27,13 +24,13 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-function createTokens(user: { id: string; email: string; role: string; organizationId: string }) {
+function createTokens(user: { id: string; email: string }) {
   const accessSecret = process.env.JWT_SECRET;
   const refreshSecret = process.env.JWT_REFRESH_SECRET;
   if (!accessSecret || !refreshSecret) throw new Error("JWT secrets not configured");
 
   const accessToken = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, organizationId: user.organizationId },
+    { id: user.id, email: user.email },
     accessSecret,
     { expiresIn: "15m" }
   );
@@ -45,25 +42,41 @@ function createTokens(user: { id: string; email: string; role: string; organizat
   return { accessToken, refreshToken };
 }
 
+function formatUserWithMemberships(
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    memberships: Array<{
+      organizationId: string;
+      role: string;
+      organization: {
+        id: string;
+        name: string;
+        slug: string;
+        showTitle: string | null;
+        weekStartsOn: number | null;
+      };
+    }>;
+  }
+) {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    memberships: user.memberships.map((m) => ({
+      organizationId: m.organizationId,
+      organization: m.organization,
+      role: m.role,
+    })),
+  };
+}
+
 router.post("/register", asyncHandler(async (req, res) => {
   try {
     const data = registerSchema.parse(req.body);
-
-    let organizationId = data.organizationId;
-    if (!organizationId && data.organizationSlug) {
-      const org = await prisma.organization.findUnique({
-        where: { slug: data.organizationSlug },
-      });
-      if (!org) {
-        res.status(400).json({ error: "Organization not found" });
-        return;
-      }
-      organizationId = org.id;
-    }
-    if (!organizationId) {
-      res.status(400).json({ error: "Organization required" });
-      return;
-    }
 
     const existing = await prisma.user.findUnique({
       where: { email: data.email },
@@ -80,18 +93,20 @@ router.post("/register", asyncHandler(async (req, res) => {
         hashedPassword,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: data.role,
-        organizationId,
       },
       select: {
         id: true,
         email: true,
         firstName: true,
         lastName: true,
-        role: true,
-        organizationId: true,
-        organization: {
-          select: { name: true, slug: true, showTitle: true, weekStartsOn: true },
+        memberships: {
+          select: {
+            organizationId: true,
+            role: true,
+            organization: {
+              select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
+            },
+          },
         },
       },
     });
@@ -99,8 +114,6 @@ router.post("/register", asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = createTokens({
       id: user.id,
       email: user.email,
-      role: user.role,
-      organizationId: user.organizationId,
     });
 
     res
@@ -117,15 +130,7 @@ router.post("/register", asyncHandler(async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          organizationId: user.organizationId,
-          organization: user.organization,
-        },
+        user: formatUserWithMemberships(user),
       });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -148,10 +153,14 @@ router.post("/login", asyncHandler(async (req, res) => {
         hashedPassword: true,
         firstName: true,
         lastName: true,
-        role: true,
-        organizationId: true,
-        organization: {
-          select: { name: true, slug: true, showTitle: true, weekStartsOn: true },
+        memberships: {
+          select: {
+            organizationId: true,
+            role: true,
+            organization: {
+              select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
+            },
+          },
         },
       },
     });
@@ -163,8 +172,6 @@ router.post("/login", asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = createTokens({
       id: user.id,
       email: user.email,
-      role: user.role,
-      organizationId: user.organizationId,
     });
 
     res
@@ -181,15 +188,7 @@ router.post("/login", asyncHandler(async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          organizationId: user.organizationId,
-          organization: user.organization,
-        },
+        user: formatUserWithMemberships(user),
       });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -223,8 +222,6 @@ router.post("/refresh", asyncHandler(async (req, res) => {
     const { accessToken } = createTokens({
       id: user.id,
       email: user.email,
-      role: user.role,
-      organizationId: user.organizationId,
     });
 
     res
@@ -263,8 +260,6 @@ router.get("/me", asyncHandler(async (req, res) => {
     const decoded = jwt.verify(token, secret) as {
       id: string;
       email: string;
-      role: string;
-      organizationId: string;
     };
 
     const user = await prisma.user.findUnique({
@@ -274,10 +269,14 @@ router.get("/me", asyncHandler(async (req, res) => {
         email: true,
         firstName: true,
         lastName: true,
-        role: true,
-        organizationId: true,
-        organization: {
-          select: { name: true, slug: true, showTitle: true, weekStartsOn: true },
+        memberships: {
+          select: {
+            organizationId: true,
+            role: true,
+            organization: {
+              select: { id: true, name: true, slug: true, showTitle: true, weekStartsOn: true },
+            },
+          },
         },
       },
     });
@@ -286,15 +285,7 @@ router.get("/me", asyncHandler(async (req, res) => {
       return;
     }
 
-    res.json({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      organizationId: user.organizationId,
-      organization: user.organization,
-    });
+    res.json(formatUserWithMemberships(user));
   } catch {
     res.status(401).json({ error: "Invalid token" });
   }

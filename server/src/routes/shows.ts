@@ -4,9 +4,8 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import multer from "multer";
 import Papa from "papaparse";
-import { authMiddleware, adminOnly } from "../middleware/auth.js";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 /** Normalize imported time to HH:mm. Handles 24h, 12h, legacy labels, Excel serial. */
 function normalizeShowTime(value: string | number | undefined): string | null {
@@ -52,9 +51,6 @@ function normalizeShowTime(value: string | number | undefined): string | null {
   return s;
 }
 const upload = multer({ storage: multer.memoryStorage() });
-
-router.use(authMiddleware);
-router.use(adminOnly);
 
 /** Validates HH:mm or HH:mm:ss format */
 const SHOW_TIME_REGEX = /^\d{1,2}:\d{2}(?::\d{2})?$/;
@@ -118,7 +114,7 @@ async function deleteExpiredShowsWithoutAttendance(organizationId: string): Prom
 }
 
 router.get("/", async (req, res) => {
-  const orgId = req.user!.organizationId;
+  const orgId = req.organizationId!;
   const start = req.query.start as string | undefined;
   const end = req.query.end as string | undefined;
 
@@ -143,7 +139,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const data = createShowSchema.parse(req.body);
-    const orgId = req.user!.organizationId;
+    const orgId = req.organizationId!;
 
     const date = new Date(data.date);
     date.setHours(0, 0, 0, 0);
@@ -173,7 +169,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
       return;
     }
 
-    const orgId = req.user!.organizationId;
+    const orgId = req.organizationId!;
     const skipDuplicates = (req.body.skipDuplicates ?? "true") === "true";
 
     const rows: { date: string; showTime: string }[] = [];
@@ -252,7 +248,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
 router.post("/bulk-generate", async (req, res) => {
 	try {
 		const data = bulkGenerateShowSchema.parse(req.body);
-		const orgId = req.user!.organizationId;
+		const orgId = req.organizationId!;
 
 		const start = parseDateOnly(data.startDate);
 		const end = parseDateOnly(data.endDate);
@@ -338,7 +334,7 @@ router.post("/bulk-generate", async (req, res) => {
 });
 
 router.get("/active", async (req, res) => {
-	const orgId = req.user!.organizationId;
+	const orgId = req.organizationId!;
 	const show = await prisma.show.findFirst({
 		where: { organizationId: orgId, activeAt: { not: null } },
 		orderBy: { activeAt: "desc" },
@@ -356,7 +352,7 @@ router.get("/active", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const orgId = req.user!.organizationId;
+  const orgId = req.organizationId!;
   const show = await prisma.show.findFirst({
     where: { id: req.params.id, organizationId: orgId },
   });
@@ -370,7 +366,7 @@ router.get("/:id", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   try {
     const data = updateShowSchema.parse(req.body);
-    const orgId = req.user!.organizationId;
+    const orgId = req.organizationId!;
 
     const existing = await prisma.show.findFirst({
       where: { id: req.params.id, organizationId: orgId },
@@ -405,7 +401,7 @@ router.patch("/:id", async (req, res) => {
 });
 
 router.post("/:id/activate", async (req, res) => {
-  const orgId = req.user!.organizationId;
+  const orgId = req.organizationId!;
   const show = await prisma.show.findFirst({
     where: { id: req.params.id, organizationId: orgId },
   });
@@ -441,7 +437,7 @@ router.post("/:id/activate", async (req, res) => {
 });
 
 router.post("/:id/close-signin", async (req, res) => {
-  const orgId = req.user!.organizationId;
+  const orgId = req.organizationId!;
   const show = await prisma.show.findFirst({
     where: { id: req.params.id, organizationId: orgId },
   });
@@ -467,7 +463,7 @@ router.post("/:id/close-signin", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const orgId = req.user!.organizationId;
+  const orgId = req.organizationId!;
   const show = await prisma.show.findFirst({
     where: { id: req.params.id, organizationId: orgId },
   });

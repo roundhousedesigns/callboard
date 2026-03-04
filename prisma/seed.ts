@@ -9,15 +9,6 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-function getWeekStart(d: Date, weekStartsOn: number): Date {
-  const start = new Date(d);
-  const day = start.getDay(); // 0=Sun..6=Sat (local)
-  const diff = (day - weekStartsOn + 7) % 7;
-  start.setDate(start.getDate() - diff);
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-
 async function main() {
   const org = await prisma.organization.upsert({
     where: { slug: "demo-theatre" },
@@ -31,7 +22,7 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("password123", 12);
 
-  await prisma.user.upsert({
+  const adminUser = await prisma.user.upsert({
     where: { email: "admin@demo.theatre" },
     update: {},
     create: {
@@ -39,8 +30,18 @@ async function main() {
       hashedPassword,
       firstName: "Admin",
       lastName: "User",
-      role: "admin",
+    },
+  });
+
+  await prisma.organizationMembership.upsert({
+    where: {
+      userId_organizationId: { userId: adminUser.id, organizationId: org.id },
+    },
+    update: { role: "owner" },
+    create: {
+      userId: adminUser.id,
       organizationId: org.id,
+      role: "owner",
     },
   });
 
@@ -51,7 +52,7 @@ async function main() {
   ];
 
   for (const a of actors) {
-    await prisma.user.upsert({
+    const user = await prisma.user.upsert({
       where: {
         email: `${a.firstName.toLowerCase()}.${a.lastName.toLowerCase()}@demo.theatre`,
       },
@@ -61,8 +62,18 @@ async function main() {
         hashedPassword,
         firstName: a.firstName,
         lastName: a.lastName,
-        role: "actor",
+      },
+    });
+
+    await prisma.organizationMembership.upsert({
+      where: {
+        userId_organizationId: { userId: user.id, organizationId: org.id },
+      },
+      update: { role: "actor" },
+      create: {
+        userId: user.id,
         organizationId: org.id,
+        role: "actor",
       },
     });
   }

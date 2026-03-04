@@ -13,8 +13,28 @@ model Organization {
   showTitle    String?
   weekStartsOn Int?   // 0=Sunday, 1=Monday, ... 6=Saturday
 
-  users User[]
-  shows Show[]
+  memberships OrganizationMembership[]
+  shows       Show[]
+}
+
+model OrganizationMembership {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+enum MembershipRole {
+  owner
+  admin
+  actor
 }
 
 model User {
@@ -23,20 +43,12 @@ model User {
   hashedPassword String
   firstName      String
   lastName       String
-  role           UserRole
-  organizationId String
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  attendance     Attendance[] @relation("ActorAttendance")
-  markedAttendance Attendance[] @relation("MarkedByUser")
+  memberships       OrganizationMembership[]
+  attendance        Attendance[]           @relation("ActorAttendance")
+  markedAttendance  Attendance[]            @relation("MarkedByUser")
 
-  @@index([organizationId])
   @@index([email])
-}
-
-enum UserRole {
-  admin
-  actor
 }
 
 model Show {

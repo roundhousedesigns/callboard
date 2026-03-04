@@ -1,12 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { authMiddleware, adminOnly } from "../middleware/auth.js";
 
-const router = Router();
-
-router.use(authMiddleware);
-router.use(adminOnly);
+const router = Router({ mergeParams: true });
 
 const statusSchema = z.enum(["signed_in", "absent", "vacation", "personal_day"]);
 
@@ -17,7 +13,7 @@ const setAttendanceSchema = z.object({
 });
 
 router.get("/", async (req, res) => {
-  const orgId = req.user!.organizationId;
+  const orgId = req.organizationId!;
   const showId = req.query.showId as string | undefined;
   const userId = req.query.userId as string | undefined;
 
@@ -28,7 +24,7 @@ router.get("/", async (req, res) => {
   const attendance = await prisma.attendance.findMany({
     where: {
       ...where,
-      user: { organizationId: orgId },
+      user: { memberships: { some: { organizationId: orgId } } },
       show: { organizationId: orgId },
     },
     include: {
@@ -42,11 +38,14 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const data = setAttendanceSchema.parse(req.body);
-    const orgId = req.user!.organizationId;
+    const orgId = req.organizationId!;
 
     const [user, show] = await Promise.all([
       prisma.user.findFirst({
-        where: { id: data.userId, organizationId: orgId },
+        where: {
+          id: data.userId,
+          memberships: { some: { organizationId: orgId } },
+        },
       }),
       prisma.show.findFirst({
         where: { id: data.showId, organizationId: orgId },
@@ -94,13 +93,13 @@ router.delete("/", async (req, res) => {
     return;
   }
 
-  const orgId = req.user!.organizationId;
+  const orgId = req.organizationId!;
 
   const attendance = await prisma.attendance.findFirst({
     where: {
       userId,
       showId,
-      user: { organizationId: orgId },
+      user: { memberships: { some: { organizationId: orgId } } },
       show: { organizationId: orgId },
     },
   });
@@ -123,7 +122,7 @@ router.post("/bulk", async (req, res) => {
       userIds: z.array(z.string()),
     });
     const data = schema.parse(req.body);
-    const orgId = req.user!.organizationId;
+    const orgId = req.organizationId!;
 
     const show = await prisma.show.findFirst({
       where: { id: data.showId, organizationId: orgId },
@@ -133,15 +132,15 @@ router.post("/bulk", async (req, res) => {
       return;
     }
 
-    const users = await prisma.user.findMany({
+    const memberships = await prisma.organizationMembership.findMany({
       where: {
-        id: { in: data.userIds },
         organizationId: orgId,
+        userId: { in: data.userIds },
         role: "actor",
       },
+      select: { userId: true },
     });
-    const validIds = new Set(users.map((u: { id: string }) => u.id));
-
+    const validIds = new Set(memberships.map((m) => m.userId));
     const results = await Promise.all(
       data.userIds
         .filter((id) => validIds.has(id))

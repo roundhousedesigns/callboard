@@ -23,4 +23,19 @@ export const api = {
 	patch: <T>(path: string, body: unknown) =>
 		request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
 	delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+	/** Org-scoped API calls. Use for admin/actor routes. */
+	org: (orgSlug: string) => ({
+		get: <T>(path: string) => request<T>(`/organizations/${orgSlug}${path}`),
+		post: <T>(path: string, body?: unknown) =>
+			request<T>(`/organizations/${orgSlug}${path}`, {
+				method: 'POST',
+				body: body ? JSON.stringify(body) : undefined,
+			}),
+		patch: <T>(path: string, body: unknown) =>
+			request<T>(`/organizations/${orgSlug}${path}`, {
+				method: 'PATCH',
+				body: JSON.stringify(body),
+			}),
+		delete: <T>(path: string) => request<T>(`/organizations/${orgSlug}${path}`, { method: 'DELETE' }),
+	}),
 };

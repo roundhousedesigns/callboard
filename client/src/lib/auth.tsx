@@ -1,19 +1,24 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { api } from './api';
 
-export interface User {
-	id: string;
-	email: string;
-	firstName: string;
-	lastName: string;
-	role: 'admin' | 'actor';
+export interface Membership {
 	organizationId: string;
-	organization?: {
+	organization: {
+		id: string;
 		name: string;
 		slug: string;
 		showTitle?: string | null;
 		weekStartsOn?: number | null;
 	};
+	role: 'owner' | 'admin' | 'actor';
+}
+
+export interface User {
+	id: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	memberships: Membership[];
 }
 
 interface AuthContextValue {
@@ -67,4 +72,25 @@ export function useAuth() {
 	const ctx = useContext(AuthContext);
 	if (!ctx) throw new Error('useAuth must be used within AuthProvider');
 	return ctx;
+}
+
+export function hasAdminAccess(user: User | null, orgSlug: string): boolean {
+	if (!user) return false;
+	const m = user.memberships.find((x) => x.organization.slug === orgSlug);
+	return m?.role === 'owner' || m?.role === 'admin';
+}
+
+export function hasActorAccess(user: User | null, orgSlug: string): boolean {
+	if (!user) return false;
+	return user.memberships.some((x) => x.organization.slug === orgSlug);
+}
+
+export function isOwner(user: User | null, orgSlug: string): boolean {
+	if (!user) return false;
+	return user.memberships.some((x) => x.organization.slug === orgSlug && x.role === 'owner');
+}
+
+export function getMembership(user: User | null, orgSlug: string): Membership | undefined {
+	if (!user) return undefined;
+	return user.memberships.find((x) => x.organization.slug === orgSlug);
 }

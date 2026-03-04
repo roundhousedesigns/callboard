@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { User } from '../../lib/auth';
+import { useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { formatShowTime } from '../../lib/dateUtils';
 import { Button, Checkbox, SelectField } from '../../components/ui';
@@ -10,9 +10,18 @@ interface Show {
 	showTime: string;
 }
 
+interface OrgMember {
+	id: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	role: string;
+}
+
 export function ManualEntryPage() {
+	const { orgSlug } = useParams<{ orgSlug: string }>();
 	const [shows, setShows] = useState<Show[]>([]);
-	const [actors, setActors] = useState<User[]>([]);
+	const [actors, setActors] = useState<OrgMember[]>([]);
 	const [selectedShow, setSelectedShow] = useState<string>('');
 	const [selectedActors, setSelectedActors] = useState<Set<string>>(new Set());
 	const [loading, setLoading] = useState(true);
@@ -20,7 +29,9 @@ export function ManualEntryPage() {
 	const [message, setMessage] = useState<string | null>(null);
 
 	useEffect(() => {
-		Promise.all([api.get<Show[]>('/shows'), api.get<User[]>('/users')])
+		if (!orgSlug) return;
+		const orgApi = api.org(orgSlug);
+		Promise.all([orgApi.get<Show[]>('/shows'), orgApi.get<OrgMember[]>('/users')])
 			.then(([s, a]) => {
 				setShows(s.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
 				setActors(
@@ -29,7 +40,7 @@ export function ManualEntryPage() {
 			})
 			.catch(console.error)
 			.finally(() => setLoading(false));
-	}, []);
+	}, [orgSlug]);
 
 	function toggleActor(id: string) {
 		setSelectedActors((prev) => {
@@ -42,11 +53,11 @@ export function ManualEntryPage() {
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
-		if (!selectedShow || selectedActors.size === 0) return;
+		if (!selectedShow || selectedActors.size === 0 || !orgSlug) return;
 		setMessage(null);
 		setSubmitting(true);
 		try {
-			await api.post('/attendance/bulk', {
+			await api.org(orgSlug).post('/attendance/bulk', {
 				showId: selectedShow,
 				userIds: Array.from(selectedActors),
 			});

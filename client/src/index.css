@@ -772,7 +772,7 @@ a.btn:hover {
 }
 
 .auth-card {
-	width: 100%;
+	width: fit-content;
 	max-width: 360px;
 }
 

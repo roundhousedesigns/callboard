@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../../lib/auth';
+import { Link, useParams } from 'react-router-dom';
+import { useAuth, getMembership } from '../../lib/auth';
 import { CallboardTable } from '../../components/CallboardTable';
 import type { Show, AttendanceRecord } from '../../components/CallboardTable';
-import type { User } from '../../lib/auth';
 import { api } from '../../lib/api';
 import { toLocalDateStr } from '../../lib/dateUtils';
 import { db } from '../../lib/offlineDb';
 import { Button, TextFieldInput } from '../../components/ui';
 
+interface OrgMember {
+	id: string;
+	firstName: string;
+	lastName: string;
+}
+
 export function OfflinePrintSheetPage() {
+	const { orgSlug } = useParams<{ orgSlug: string }>();
 	const { user } = useAuth();
-	const [actors, setActors] = useState<User[]>([]);
+	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
+	const [actors, setActors] = useState<OrgMember[]>([]);
 	const [shows, setShows] = useState<Show[]>([]);
 	const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -19,6 +26,7 @@ export function OfflinePrintSheetPage() {
 	const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
 	useEffect(() => {
+		if (!orgSlug) return;
 		const today = new Date();
 		setDateRange({
 			start: toLocalDateStr(today),
@@ -38,19 +46,24 @@ export function OfflinePrintSheetPage() {
 	}, []);
 
 	useEffect(() => {
+		if (!orgSlug) return;
+		const slug: string = orgSlug;
 		let cancelled = false;
 
 		async function load() {
 			if (online) {
 				try {
+					const orgApi = api.org(slug);
 					const [usersRes, showsRes] = await Promise.all([
-						api.get<User[]>('/users'),
-						api.get<Show[]>(
+						orgApi.get<Array<OrgMember & { role?: string }>>('/users'),
+						orgApi.get<Show[]>(
 							`/shows?start=${dateRange.start || '1970-01-01'}&end=${dateRange.end || '2099-12-31'}`,
 						),
 					]);
 					if (cancelled) return;
-					const actorList = usersRes.filter((u) => u.role === 'actor');
+					const actorList = usersRes
+						.filter((u) => u.role === 'actor')
+						.map((a) => ({ id: a.id, firstName: a.firstName, lastName: a.lastName }));
 					setActors(actorList);
 					setShows(showsRes);
 
@@ -79,7 +92,7 @@ export function OfflinePrintSheetPage() {
 
 					const allAttendance: AttendanceRecord[] = [];
 					for (const show of showsRes) {
-						const att = await api.get<Array<{ userId: string; showId: string; status: string }>>(
+						const att = await orgApi.get<Array<{ userId: string; showId: string; status: string }>>(
 							`/attendance?showId=${show.id}`,
 						);
 						allAttendance.push(
@@ -114,11 +127,8 @@ export function OfflinePrintSheetPage() {
 				setActors(
 					offlineActors.map((a) => ({
 						id: a.id,
-						email: '',
 						firstName: a.firstName,
 						lastName: a.lastName,
-						role: 'actor' as const,
-						organizationId: '',
 					})),
 				);
 				setShows(
@@ -140,7 +150,7 @@ export function OfflinePrintSheetPage() {
 		return () => {
 			cancelled = true;
 		};
-	}, [online, dateRange.start, dateRange.end]);
+	}, [online, dateRange.start, dateRange.end, orgSlug]);
 
 	function handlePrint() {
 		window.print();
@@ -149,7 +159,7 @@ export function OfflinePrintSheetPage() {
 	if (loading) return <div className="muted">Loading...</div>;
 
 	const displayTitle =
-		user?.organization?.showTitle ?? user?.organization?.name ?? 'Offline Attendance Sheet';
+		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Offline Attendance Sheet';
 
 	return (
 		<div>
@@ -190,10 +200,10 @@ export function OfflinePrintSheetPage() {
 					>
 						Print sheet
 					</Button>
-					{online && (
+					{online && orgSlug && (
 						<Link
 							className="btn btn--sm btn--ghost"
-							to="/admin/manual-entry"
+							to={`/admin/${orgSlug}/manual-entry`}
 						>
 							Enter manual sign-ins
 						</Link>

@@ -5,12 +5,14 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { authRoutes } from "./routes/auth.js";
+import { accountRoutes } from "./routes/account.js";
 import { userRoutes } from "./routes/users.js";
 import { showRoutes } from "./routes/shows.js";
 import { attendanceRoutes } from "./routes/attendance.js";
 import { signInRoutes } from "./routes/signIn.js";
 import { organizationRoutes } from "./routes/organizations.js";
 import { actorRoutes } from "./routes/actor.js";
+import { authMiddleware, adminOrOwner, ownerOnly, anyMember } from "./middleware/auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -27,12 +29,34 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/shows", showRoutes);
-app.use("/api/attendance", attendanceRoutes);
+app.use("/api/account", accountRoutes);
 app.use("/api/sign-in", signInRoutes);
 app.use("/api/organizations", organizationRoutes);
-app.use("/api/actor", actorRoutes);
+
+app.use(
+  "/api/organizations/:orgSlug/users",
+  authMiddleware,
+  adminOrOwner,
+  userRoutes
+);
+app.use(
+  "/api/organizations/:orgSlug/shows",
+  authMiddleware,
+  adminOrOwner,
+  showRoutes
+);
+app.use(
+  "/api/organizations/:orgSlug/attendance",
+  authMiddleware,
+  adminOrOwner,
+  attendanceRoutes
+);
+app.use(
+  "/api/organizations/:orgSlug/actor",
+  authMiddleware,
+  anyMember,
+  actorRoutes
+);
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });

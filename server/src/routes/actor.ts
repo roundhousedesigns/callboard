@@ -1,11 +1,10 @@
 import { Router } from "express";
 import { prisma } from "../db.js";
-import { authMiddleware, actorOnly } from "../middleware/auth.js";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-router.get("/callboard/active", authMiddleware, actorOnly, async (req, res) => {
-  const orgId = req.user!.organizationId;
+router.get("/callboard/active", async (req, res) => {
+  const orgId = req.organizationId!;
 
   const show = await prisma.show.findFirst({
     where: { organizationId: orgId, activeAt: { not: null } },
@@ -25,23 +24,29 @@ router.get("/callboard/active", authMiddleware, actorOnly, async (req, res) => {
   }
 
   const [actors, attendance] = await Promise.all([
-    prisma.user.findMany({
+    prisma.organizationMembership.findMany({
       where: { organizationId: orgId, role: "actor" },
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-      select: { id: true, firstName: true, lastName: true },
+      select: {
+        user: {
+          select: { id: true, firstName: true, lastName: true },
+        },
+      },
     }),
     prisma.attendance.findMany({
       where: {
         showId: show.id,
-        user: { organizationId: orgId },
+        user: { memberships: { some: { organizationId: orgId } } },
         show: { organizationId: orgId },
       },
       select: { userId: true, showId: true, status: true },
     }),
   ]);
 
-  res.json({ show, actors, attendance });
+  res.json({
+    show,
+    actors: actors.map((m) => m.user),
+    attendance,
+  });
 });
 
 export { router as actorRoutes };
-

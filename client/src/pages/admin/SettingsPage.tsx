@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FileTrigger } from 'react-aria-components';
 import { api } from '../../lib/api';
-import { useAuth } from '../../lib/auth';
+import { useAuth, getMembership, isOwner } from '../../lib/auth';
 import { formatShowTime } from '../../lib/dateUtils';
 import { Button, Checkbox, SelectField, TextFieldInput } from '../../components/ui';
 import { BulkShowCreator } from '../../components/BulkShowCreator';
+
+interface OrgMember {
+	id: string;
+	email: string;
+	firstName: string;
+	lastName: string;
+	role: string;
+}
 
 interface ImportResult {
 	createdCount: number;
@@ -29,9 +38,14 @@ interface OrgSettings {
 }
 
 export function SettingsPage() {
+	const { orgSlug } = useParams<{ orgSlug: string }>();
+	const navigate = useNavigate();
 	const { user, refresh } = useAuth();
+	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
+	const canRenameDelete = orgSlug ? isOwner(user, orgSlug) : false;
 	const [showTitle, setShowTitle] = useState('');
 	const [weekStartsOn, setWeekStartsOn] = useState<number>(0);
+	const [orgName, setOrgName] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -41,13 +55,23 @@ export function SettingsPage() {
 	const [importLoading, setImportLoading] = useState(false);
 	const [importError, setImportError] = useState<string | null>(null);
 	const [fileTriggerKey, setFileTriggerKey] = useState(0);
+	const [members, setMembers] = useState<OrgMember[]>([]);
+	const [addEmail, setAddEmail] = useState('');
+	const [addRole, setAddRole] = useState<'owner' | 'admin' | 'actor'>('actor');
+	const [addMemberLoading, setAddMemberLoading] = useState(false);
 
 	useEffect(() => {
+		if (!orgSlug) return;
 		async function load() {
+			if (!orgSlug) return;
 			try {
-				const settings = await api.get<OrgSettings>('/organizations/me/settings');
+				const [settings, membersRes] = await Promise.all([
+					api.org(orgSlug).get<OrgSettings>('/settings'),
+					api.org(orgSlug).get<OrgMember[]>('/members'),
+				]);
 				setShowTitle(settings.showTitle ?? '');
 				setWeekStartsOn(settings.weekStartsOn ?? 0);
+				setMembers(membersRes);
 			} catch (err) {
 				setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to load' });
 			} finally {
@@ -55,13 +79,18 @@ export function SettingsPage() {
 			}
 		}
 		void load();
-	}, []);
+	}, [orgSlug]);
+
+	useEffect(() => {
+		if (membership?.organization?.name) setOrgName(membership.organization.name);
+	}, [membership?.organization?.name]);
 
 	async function submitSettings() {
+		if (!orgSlug) return;
 		setMessage(null);
 		setSaving(true);
 		try {
-			await api.patch('/organizations/me/settings', {
+			await api.org(orgSlug).patch('/settings', {
 				showTitle: showTitle.trim() || null,
 				weekStartsOn,
 			});
@@ -83,7 +112,7 @@ export function SettingsPage() {
 	}
 
 	async function importCalendar() {
-		if (!importFile) return;
+		if (!importFile || !orgSlug) return;
 		setImportError(null);
 		setImportResult(null);
 		setImportLoading(true);
@@ -92,7 +121,7 @@ export function SettingsPage() {
 			formData.append('file', importFile);
 			formData.append('skipDuplicates', String(skipDuplicates));
 
-			const res = await fetch('/api/shows/import', {
+			const res = await fetch(`/api/organizations/${orgSlug}/shows/import`, {
 				method: 'POST',
 				credentials: 'include',
 				body: formData,
@@ -114,19 +143,84 @@ export function SettingsPage() {
 		void importCalendar();
 	}
 
+	async function handleRename(e: React.FormEvent) {
+		e.preventDefault();
+		if (!orgSlug || !canRenameDelete) return;
+		setMessage(null);
+		setSaving(true);
+		try {
+			await api.patch(`/organizations/${orgSlug}`, { name: orgName.trim() });
+			await refresh();
+			setMessage({ type: 'success', text: 'Company renamed.' });
+		} catch (err) {
+			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to rename' });
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	async function handleDelete() {
+		if (!orgSlug || !canRenameDelete) return;
+		if (!confirm(`Delete "${membership?.organization?.name ?? orgName}"? This cannot be undone.`)) return;
+		try {
+			await api.delete(`/organizations/${orgSlug}`);
+			await refresh();
+			navigate('/account');
+		} catch (err) {
+			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete' });
+		}
+	}
+
+	async function handleAddMember(e: React.FormEvent) {
+		e.preventDefault();
+		if (!orgSlug || !addEmail.trim()) return;
+		setAddMemberLoading(true);
+		setMessage(null);
+		try {
+			const role = canRenameDelete ? addRole : 'actor';
+			await api.org(orgSlug).post('/members', { email: addEmail.trim(), role });
+			const membersRes = await api.org(orgSlug).get<OrgMember[]>('/members');
+			setMembers(membersRes);
+			setAddEmail('');
+			setMessage({ type: 'success', text: 'Member added.' });
+		} catch (err) {
+			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to add member' });
+		} finally {
+			setAddMemberLoading(false);
+		}
+	}
+
+	async function handleRemoveMember(memberId: string) {
+		if (!orgSlug) return;
+		if (!confirm('Remove this member?')) return;
+		try {
+			await api.org(orgSlug).delete(`/members/${memberId}`);
+			setMembers((prev) => prev.filter((m) => m.id !== memberId));
+			setMessage({ type: 'success', text: 'Member removed.' });
+		} catch (err) {
+			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to remove' });
+		}
+	}
+
 	if (loading) return <div className="muted">Loading...</div>;
 
-	const orgName = user?.organization?.name ?? 'Organization';
+	const displayOrgName = (membership?.organization?.name ?? orgName) || 'Organization';
 
 	return (
 		<div>
 			<div className="page-header">
 				<div>
 					<h1 className="page-title">Settings</h1>
-					<p className="page-subtitle">Organization: {orgName}</p>
+					<p className="page-subtitle">Organization: {displayOrgName}</p>
 				</div>
 				<div className="no-print">
-					<BulkShowCreator triggerLabel="Build schedule" weekStartsOn={weekStartsOn} />
+					{orgSlug && (
+						<BulkShowCreator
+							orgSlug={orgSlug}
+							triggerLabel="Build schedule"
+							weekStartsOn={weekStartsOn}
+						/>
+					)}
 				</div>
 			</div>
 			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
@@ -138,7 +232,7 @@ export function SettingsPage() {
 							onChange={setShowTitle}
 							inputProps={{
 								type: 'text',
-								placeholder: orgName,
+								placeholder: displayOrgName,
 							}}
 						/>
 						<p className="field-help">
@@ -245,6 +339,90 @@ export function SettingsPage() {
 						)}
 					</div>
 				)}
+			</div>
+
+			{canRenameDelete && (
+				<>
+					<hr />
+					<h2 style={{ marginBottom: '0.5rem' }}>Company</h2>
+					<div className="card card--flat stack" style={{ maxWidth: '34rem' }}>
+						<form onSubmit={handleRename} className="stack">
+							<TextFieldInput
+								label="Company name"
+								value={orgName}
+								onChange={setOrgName}
+								inputProps={{ placeholder: 'Company name' }}
+							/>
+							<Button type="submit" variant="primary" isDisabled={saving}>
+								{saving ? 'Saving...' : 'Rename company'}
+							</Button>
+						</form>
+						<Button variant="danger" onPress={handleDelete}>
+							Delete company
+						</Button>
+					</div>
+				</>
+			)}
+
+			<hr />
+			<h2 style={{ marginBottom: '0.5rem' }}>Team</h2>
+			<p className="muted" style={{ marginBottom: '1rem' }}>
+				Add members by email. They must already have an account.
+			</p>
+			<div className="card card--flat stack" style={{ maxWidth: '34rem', marginBottom: '1rem' }}>
+				<form onSubmit={handleAddMember} className="stack">
+					<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+						<TextFieldInput
+							label="Email"
+							value={addEmail}
+							onChange={setAddEmail}
+							inputProps={{ type: 'email', placeholder: 'user@example.com' }}
+						/>
+						{canRenameDelete && (
+							<SelectField
+								label="Role"
+								selectedKey={addRole}
+								onSelectionChange={(k) => setAddRole(k as 'owner' | 'admin' | 'actor')}
+								options={[
+									{ id: 'owner', label: 'Owner' },
+									{ id: 'admin', label: 'Admin' },
+									{ id: 'actor', label: 'Actor' },
+								]}
+							/>
+						)}
+						<Button type="submit" variant="primary" isDisabled={addMemberLoading || !addEmail.trim()}>
+							{addMemberLoading ? 'Adding...' : 'Add member'}
+						</Button>
+					</div>
+				</form>
+			</div>
+			<div className="table-wrap">
+				<table>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>Email</th>
+							<th>Role</th>
+							<th className="no-print"></th>
+						</tr>
+					</thead>
+					<tbody>
+						{members.map((m) => (
+							<tr key={m.id}>
+								<td>{m.lastName}, {m.firstName}</td>
+								<td>{m.email}</td>
+								<td style={{ textTransform: 'capitalize' }}>{m.role}</td>
+								<td className="no-print">
+									{(canRenameDelete || (membership?.role === 'admin' && m.role === 'actor')) && m.id !== user?.id && (
+										<Button size="sm" variant="danger" onPress={() => void handleRemoveMember(m.id)}>
+											Remove
+										</Button>
+									)}
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			</div>
 		</div>
 	);
