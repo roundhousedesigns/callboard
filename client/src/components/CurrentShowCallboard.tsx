@@ -80,7 +80,7 @@ export function CurrentShowCallboard({
 
 	if (noActiveShow) {
 		return (
-			<div className="card card--flat" style={{ maxWidth: '60rem' }}>
+			<div className="surface surface--wide">
 				{heading ? <h2 style={{ marginTop: 0 }}>{heading}</h2> : null}
 				<p className="muted" style={{ margin: 0 }}>
 					No active show right now.
@@ -91,7 +91,7 @@ export function CurrentShowCallboard({
 
 	if (error) {
 		return (
-			<div className="card card--flat" style={{ maxWidth: '60rem' }}>
+			<div className="surface surface--wide">
 				{heading ? <h2 style={{ marginTop: 0 }}>{heading}</h2> : null}
 				<div className="alert alert--error">{error}</div>
 			</div>

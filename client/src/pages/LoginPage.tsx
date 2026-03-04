@@ -40,7 +40,7 @@ export function LoginPage() {
 		<div className="auth-shell">
 			<form
 				onSubmit={handleSubmit}
-				className="card auth-card stack"
+				className="surface auth-panel stack"
 			>
 				<div>
 					<h1 className="auth-title">Callboard</h1>

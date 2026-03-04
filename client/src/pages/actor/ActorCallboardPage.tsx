@@ -11,7 +11,7 @@ export function ActorCallboardPage() {
 		membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Callboard';
 
 	return (
-		<div style={{ padding: '1.25rem' }}>
+		<div className="page-content">
 			<div className="page-header">
 				<div>
 					<h1 className="page-title">{displayTitle}</h1>

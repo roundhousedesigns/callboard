@@ -53,8 +53,8 @@ export function SignInLandingPage() {
 	if (loading || (!result && !error)) {
 		return (
 			<div className="auth-shell">
-				<div className="card auth-card" style={{ textAlign: 'center' }}>
-					<p className="muted" style={{ margin: 0 }}>
+				<div className="surface auth-panel surface--center">
+					<p className="muted u-m0">
 						Processing sign-in...
 					</p>
 				</div>
@@ -65,9 +65,9 @@ export function SignInLandingPage() {
 	if (error) {
 		return (
 			<div className="auth-shell">
-				<div className="card auth-card stack" style={{ textAlign: 'center' }}>
+				<div className="surface auth-panel stack surface--center">
 					<h2 style={{ color: 'var(--error)', margin: 0 }}>Sign-in failed</h2>
-					<p className="muted" style={{ margin: 0 }}>
+					<p className="muted u-m0">
 						{error}
 					</p>
 				</div>
@@ -84,9 +84,9 @@ export function SignInLandingPage() {
 	return (
 		<div className="auth-shell">
 			<div className="stack" style={{ width: 'min(70rem, 100%)', margin: '0 auto' }}>
-				<div className="card auth-card stack" style={{ textAlign: 'center' }}>
+				<div className="surface auth-panel stack surface--center">
 					<h2 style={{ color: 'var(--success)', margin: 0 }}>You're signed in</h2>
-					<p className="muted" style={{ margin: 0 }}>
+					<p className="muted u-m0">
 						{`Successfully signed in for ${showLabel}.`}
 					</p>
 				</div>

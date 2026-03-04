@@ -242,12 +242,12 @@ export function CallboardTable({
 					const activeShow = !!show.activeAt;
 					return (
 						<section
-							className="callboard-mobile-card"
+							className="callboard-mobile-panel"
 							role="listitem"
 							key={show.id}
 							style={isHighlighted(show.id) ? highlightStyle : undefined}
 						>
-							<header className="callboard-mobile-card__header callboard-mobile-card__header--show">
+							<header className="callboard-mobile-panel__header callboard-mobile-panel__header--show">
 								<button
 									type="button"
 									className="callboard-mobile-show-toggle"
@@ -260,7 +260,7 @@ export function CallboardTable({
 									<span className="callboard-mobile-show-toggle__icon" aria-hidden>
 										{showIsOpen ? '▾' : '▸'}
 									</span>
-									<span className="callboard-mobile-card__title">{formatShowLabel(show)}</span>
+									<span className="callboard-mobile-panel__title">{formatShowLabel(show)}</span>
 								</button>
 								{activeShow && !readOnly && orgSlug && (
 									<Link
@@ -274,7 +274,7 @@ export function CallboardTable({
 								)}
 							</header>
 							{showIsOpen && (
-								<div className="callboard-mobile-card__body" id={`show-actors-${show.id}`}>
+								<div className="callboard-mobile-panel__body" id={`show-actors-${show.id}`}>
 									{actors.map((actor) => {
 										const status = getStatus(actor.id, show.id) ?? null;
 										return (

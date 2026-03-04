@@ -6,7 +6,7 @@ export function ActorHomePage() {
 
 	return (
 		<div className="auth-shell">
-			<div className="card auth-card stack" style={{ maxWidth: '420px' }}>
+			<div className="surface auth-panel stack surface--center" style={{ maxWidth: '420px' }}>
 				<h1 className="auth-title">Callboard</h1>
 				<p className="muted" style={{ textAlign: 'center' }}>
 					You're signed in as{' '}

@@ -13,7 +13,8 @@ export function AdminLayout() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
 	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
-	const orgName = membership?.organization?.showTitle ?? membership?.organization?.name ?? 'Admin';
+	const organization = membership?.organization;
+	const orgName = organization ? (organization.showTitle ?? organization.name) : 'Admin';
 
 	useEffect(() => {
 		setIsMobileMenuOpen(false);
@@ -62,89 +63,65 @@ export function AdminLayout() {
 	if (!orgSlug) return null;
 
 	const base = `/admin/${orgSlug}`;
+	const closeMenu = () => setIsMobileMenuOpen(false);
 
 	return (
-		<div className="app-shell">
-			<header className="no-print app-header">
-				<div className="container app-header__inner">
-					<button
-						type="button"
-						className="app-nav-toggle"
-						aria-expanded={isMobileMenuOpen}
-						aria-controls="admin-nav"
-						onClick={() => {
-							setIsMobileMenuOpen((prev) => !prev);
-						}}
-					>
-						<span aria-hidden>{isMobileMenuOpen ? '✕' : '☰'}</span>
-						<span>Menu</span>
-					</button>
-					<nav
-						id="admin-nav"
-						className={`app-nav${isMobileMenuOpen ? ' is-open' : ''}`}
-						aria-label="Admin"
-						onClick={(event) => {
-							const target = event.target as HTMLElement | null;
-							if (target?.closest('a')) {
-								setIsMobileMenuOpen(false);
-							}
-						}}
-					>
-						<NavLink
-							to="/account"
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+		<div className={`app-shell app-shell--admin${isMobileMenuOpen ? ' sidebar-open' : ''}`}>
+			<div className="app-admin-layout">
+				<aside
+					id="admin-nav"
+					className="app-sidebar no-print"
+					aria-label="Admin"
+				>
+					<div className="app-sidebar__brand">
+						<div>
+							<p className="app-sidebar__title">Organization</p>
+							<p className="app-sidebar__subtitle">{orgName}</p>
+						</div>
+						<button
+							type="button"
+							className="app-sidebar-toggle"
+							aria-label="Close menu"
+							onClick={closeMenu}
 						>
-							Account
-						</NavLink>
-						<NavLink
-							to={base}
-							end
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
+							✕
+						</button>
+					</div>
+					<nav className="app-sidebar__nav">
+						<NavLink to={base} end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
 							Callboard
 						</NavLink>
-						<NavLink
-							to={`${base}/shows`}
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
+						<NavLink to={`${base}/shows`} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
 							Shows
 						</NavLink>
-						<NavLink
-							to={`${base}/actors`}
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
+						<NavLink to={`${base}/actors`} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
 							Actors
 						</NavLink>
-						<NavLink
-							to={`${base}/offline`}
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
+						<NavLink to={`${base}/offline`} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
 							Offline
 						</NavLink>
-						<NavLink
-							to={`${base}/settings`}
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
-							Settings
+						<NavLink to={`${base}/settings`} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
+							Show Settings
 						</NavLink>
-						<NavLink
-							to={`${base}/qr`}
-							className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-						>
+						<NavLink to={`${base}/qr`} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
 							QR
 						</NavLink>
-
 						{hasActiveShow && (
 							<NavLink
 								to={`${base}/current-show`}
 								className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+								onClick={closeMenu}
 							>
 								Current show
 							</NavLink>
 						)}
 					</nav>
-					<div className="app-header__actions">
-						<span className="badge">{orgName}</span>
+					<div className="app-sidebar__footer">
+						<nav className="app-sidebar__footer-nav" aria-label="Account">
+							<NavLink to="/account" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={closeMenu}>
+								Account
+							</NavLink>
+						</nav>
 						<Button
 							size="sm"
 							variant="ghost"
@@ -155,13 +132,32 @@ export function AdminLayout() {
 							Log out
 						</Button>
 					</div>
-				</div>
-			</header>
-			<main className="app-main">
-				<div className="container">
-					<Outlet />
-				</div>
-			</main>
+				</aside>
+				<button
+					type="button"
+					className="app-sidebar-backdrop no-print"
+					aria-label="Close sidebar"
+					onClick={closeMenu}
+				/>
+				<main className="app-main app-main--admin">
+					<div className="container container--admin app-main__inner">
+						<div className="app-main-mobilebar no-print">
+							<button
+								type="button"
+								className="app-sidebar-toggle"
+								aria-expanded={isMobileMenuOpen}
+								aria-controls="admin-nav"
+								onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+							>
+								<span aria-hidden>{isMobileMenuOpen ? '✕' : '☰'}</span>
+								<span>Menu</span>
+							</button>
+							<span className="badge app-main-mobilebar__org" title={orgName}>{orgName}</span>
+						</div>
+						<Outlet />
+					</div>
+				</main>
+			</div>
 		</div>
 	);
 }

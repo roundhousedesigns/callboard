@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { FileTrigger } from 'react-aria-components';
 import { api } from '../../lib/api';
-import { useAuth, getMembership, isOwner } from '../../lib/auth';
+import { useAuth, getMembership } from '../../lib/auth';
 import { formatShowTime } from '../../lib/dateUtils';
 import { Button, Checkbox, SelectField, TextFieldInput } from '../../components/ui';
 import { BulkShowCreator } from '../../components/BulkShowCreator';
@@ -39,13 +39,10 @@ interface OrgSettings {
 
 export function SettingsPage() {
 	const { orgSlug } = useParams<{ orgSlug: string }>();
-	const navigate = useNavigate();
 	const { user, refresh } = useAuth();
 	const membership = orgSlug ? getMembership(user, orgSlug) : undefined;
-	const canRenameDelete = orgSlug ? isOwner(user, orgSlug) : false;
 	const [showTitle, setShowTitle] = useState('');
 	const [weekStartsOn, setWeekStartsOn] = useState<number>(0);
-	const [orgName, setOrgName] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -80,10 +77,6 @@ export function SettingsPage() {
 		}
 		void load();
 	}, [orgSlug]);
-
-	useEffect(() => {
-		if (membership?.organization?.name) setOrgName(membership.organization.name);
-	}, [membership?.organization?.name]);
 
 	async function submitSettings() {
 		if (!orgSlug) return;
@@ -143,34 +136,6 @@ export function SettingsPage() {
 		void importCalendar();
 	}
 
-	async function handleRename(e: React.FormEvent) {
-		e.preventDefault();
-		if (!orgSlug || !canRenameDelete) return;
-		setMessage(null);
-		setSaving(true);
-		try {
-			await api.patch(`/organizations/${orgSlug}`, { name: orgName.trim() });
-			await refresh();
-			setMessage({ type: 'success', text: 'Company renamed.' });
-		} catch (err) {
-			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to rename' });
-		} finally {
-			setSaving(false);
-		}
-	}
-
-	async function handleDelete() {
-		if (!orgSlug || !canRenameDelete) return;
-		if (!confirm(`Delete "${membership?.organization?.name ?? orgName}"? This cannot be undone.`)) return;
-		try {
-			await api.delete(`/organizations/${orgSlug}`);
-			await refresh();
-			navigate('/account');
-		} catch (err) {
-			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete' });
-		}
-	}
-
 	async function handleAddMember(e: React.FormEvent) {
 		e.preventDefault();
 		if (!orgSlug || !addEmail.trim()) return;
@@ -204,14 +169,15 @@ export function SettingsPage() {
 
 	if (loading) return <div className="muted">Loading...</div>;
 
-	const displayOrgName = (membership?.organization?.name ?? orgName) || 'Organization';
+	const displayOrgName = membership?.organization?.name || 'Organization';
+	const isOwnerMember = membership?.role === 'owner';
 
 	return (
 		<div>
 			<div className="page-header">
 				<div>
-					<h1 className="page-title">Settings</h1>
-					<p className="page-subtitle">Organization: {displayOrgName}</p>
+					<h1 className="page-title">Show Settings</h1>
+					<p className="page-subtitle">{displayOrgName}</p>
 				</div>
 				<div className="no-print">
 					{orgSlug && (
@@ -223,7 +189,7 @@ export function SettingsPage() {
 					)}
 				</div>
 			</div>
-			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
+			<div className="surface section-narrow">
 				<form onSubmit={handleSubmit} className="stack">
 					<div className="field">
 						<TextFieldInput
@@ -240,7 +206,7 @@ export function SettingsPage() {
 						</p>
 					</div>
 
-					<div className="field" style={{ width: '12rem' }}>
+					<div className="field field--narrow">
 						<SelectField
 							label="Week starts on"
 							selectedKey={String(weekStartsOn)}
@@ -275,16 +241,16 @@ export function SettingsPage() {
 
 			<hr />
 
-			<h2 style={{ marginBottom: '0.5rem' }}>Import Performance Calendar</h2>
-			<p className="muted" style={{ marginBottom: '1rem' }}>
+			<h2 className="section-title">Import Performance Calendar</h2>
+			<p className="muted section-lead">
 				Upload a CSV (<code>.csv</code>) with headers. Required columns: <code>date</code> (YYYY-MM-DD)
 				and <code>showTime</code> (or <code>time</code>). Time accepts 24h <code>HH:mm</code> (or{' '}
 				<code>HH:mm:ss</code>) or 12h with AM/PM (e.g. <code>2:00 PM</code>). Also accepts{' '}
 				<code>matinee</code>, <code>evening</code>, <code>noon</code>, <code>midnight</code>.
 			</p>
-			<div className="card card--flat" style={{ maxWidth: '34rem' }}>
+			<div className="surface section-narrow">
 				<form onSubmit={handleImportSubmit} className="stack">
-					<div className="stack" style={{ gap: '0.4rem' }}>
+					<div className="stack stack--tight">
 						<FileTrigger
 							key={fileTriggerKey}
 							acceptedFileTypes={['.csv']}
@@ -314,21 +280,17 @@ export function SettingsPage() {
 					</Button>
 				</form>
 
-				{importError && (
-					<div className="alert alert--error" style={{ marginTop: '1rem' }}>
-						{importError}
-					</div>
-				)}
+				{importError && <div className="alert alert--error u-mt-md">{importError}</div>}
 				{importResult && (
-					<div className="alert alert--success" style={{ marginTop: '1rem' }}>
-						<p style={{ margin: 0 }}>
+					<div className="alert alert--success u-mt-md">
+						<p className="u-m0">
 							Created: <strong>{importResult.createdCount}</strong> | Skipped:{' '}
 							<strong>{importResult.skippedCount}</strong>
 						</p>
 						{importResult.createdShows && importResult.createdShows.length > 0 && (
-							<details style={{ marginTop: '0.75rem' }}>
+							<details className="u-mt-sm">
 								<summary>Created shows</summary>
-								<ul style={{ marginTop: '0.5rem' }}>
+								<ul>
 									{importResult.createdShows.map((s, i) => (
 										<li key={i}>
 											{s.date} — {formatShowTime(s.showTime)}
@@ -341,55 +303,32 @@ export function SettingsPage() {
 				)}
 			</div>
 
-			{canRenameDelete && (
-				<>
-					<hr />
-					<h2 style={{ marginBottom: '0.5rem' }}>Company</h2>
-					<div className="card card--flat stack" style={{ maxWidth: '34rem' }}>
-						<form onSubmit={handleRename} className="stack">
-							<TextFieldInput
-								label="Company name"
-								value={orgName}
-								onChange={setOrgName}
-								inputProps={{ placeholder: 'Company name' }}
-							/>
-							<Button type="submit" variant="primary" isDisabled={saving}>
-								{saving ? 'Saving...' : 'Rename company'}
-							</Button>
-						</form>
-						<Button variant="danger" onPress={handleDelete}>
-							Delete company
-						</Button>
-					</div>
-				</>
-			)}
-
-			<hr />
-			<h2 style={{ marginBottom: '0.5rem' }}>Team</h2>
-			<p className="muted" style={{ marginBottom: '1rem' }}>
+		<hr />
+			<h2 className="section-title">Team</h2>
+			<p className="muted section-lead">
 				Add members by email. They must already have an account.
 			</p>
-			<div className="card card--flat stack" style={{ maxWidth: '34rem', marginBottom: '1rem' }}>
+			<div className="surface stack section-narrow u-mb-md">
 				<form onSubmit={handleAddMember} className="stack">
-					<div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+					<div className="inline-form-row">
 						<TextFieldInput
 							label="Email"
 							value={addEmail}
 							onChange={setAddEmail}
 							inputProps={{ type: 'email', placeholder: 'user@example.com' }}
 						/>
-						{canRenameDelete && (
-							<SelectField
-								label="Role"
-								selectedKey={addRole}
-								onSelectionChange={(k) => setAddRole(k as 'owner' | 'admin' | 'actor')}
-								options={[
-									{ id: 'owner', label: 'Owner' },
-									{ id: 'admin', label: 'Admin' },
-									{ id: 'actor', label: 'Actor' },
-								]}
-							/>
-						)}
+					{isOwnerMember && (
+						<SelectField
+							label="Role"
+							selectedKey={addRole}
+							onSelectionChange={(k) => setAddRole(k as 'owner' | 'admin' | 'actor')}
+							options={[
+								{ id: 'owner', label: 'Owner' },
+								{ id: 'admin', label: 'Admin' },
+								{ id: 'actor', label: 'Actor' },
+							]}
+						/>
+					)}
 						<Button type="submit" variant="primary" isDisabled={addMemberLoading || !addEmail.trim()}>
 							{addMemberLoading ? 'Adding...' : 'Add member'}
 						</Button>
@@ -411,9 +350,9 @@ export function SettingsPage() {
 							<tr key={m.id}>
 								<td>{m.lastName}, {m.firstName}</td>
 								<td>{m.email}</td>
-								<td style={{ textTransform: 'capitalize' }}>{m.role}</td>
+								<td className="role-capitalize">{m.role}</td>
 								<td className="no-print">
-									{(canRenameDelete || (membership?.role === 'admin' && m.role === 'actor')) && m.id !== user?.id && (
+									{(isOwnerMember || (membership?.role === 'admin' && m.role === 'actor')) && m.id !== user?.id && (
 										<Button size="sm" variant="danger" onPress={() => void handleRemoveMember(m.id)}>
 											Remove
 										</Button>

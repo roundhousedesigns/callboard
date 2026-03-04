@@ -47,12 +47,12 @@ export function QRDisplayPage() {
 		const isNoActive = error.toLowerCase().includes('no active show');
 		return (
 			<div className="centered">
-				<div className="card auth-card stack" style={{ maxWidth: '460px', textAlign: 'center' }}>
-					<h2 style={{ color: isNoActive ? 'var(--text-muted)' : 'var(--error)', margin: 0 }}>
+				<div className="surface auth-panel stack qr-panel">
+					<h2 className={`qr-status-title${isNoActive ? '' : ' qr-status-title--error'}`}>
 						{isNoActive ? 'No active show' : error}
 					</h2>
 					{isNoActive && (
-						<p className="muted" style={{ margin: 0 }}>
+						<p className="muted u-m0">
 							Open sign-in for a show from the Shows page to display the QR code.
 						</p>
 					)}
@@ -97,7 +97,7 @@ export function QRDisplayPage() {
 
 	return (
 		<div className="centered">
-			<div className="card auth-card stack" style={{ maxWidth: '520px', textAlign: 'center' }}>
+			<div className="surface auth-panel stack qr-panel">
 				<div>
 					<h1 className="auth-title">Scan to sign in</h1>
 					<p className="auth-subtitle">
@@ -114,7 +114,7 @@ export function QRDisplayPage() {
 				>
 					Print QR sheet
 				</Button>
-				<div className="qr-box" style={{ margin: '0 auto' }}>
+				<div className="qr-box qr-box--center">
 					<QRCodeSVG value={signInUrl} size={256} level="H" />
 				</div>
 			</div>

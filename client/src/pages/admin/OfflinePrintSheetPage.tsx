@@ -210,7 +210,7 @@ export function OfflinePrintSheetPage() {
 					)}
 				</div>
 			</div>
-			<div className="card card--flat" style={{ marginBottom: '1rem' }}>
+			<div className="surface u-mb-md">
 				<p style={{ margin: 0, fontSize: '0.95rem' }}>
 					<strong>Instructions when offline:</strong> Print this sheet. As actors arrive, mark their
 					sign-in on the printed sheet. When internet is restored, go to Manual Entry to submit the

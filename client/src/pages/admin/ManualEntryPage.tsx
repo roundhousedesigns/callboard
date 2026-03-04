@@ -82,7 +82,7 @@ export function ManualEntryPage() {
 					</p>
 				</div>
 			</div>
-			<form onSubmit={handleSubmit} className="card card--flat stack" style={{ maxWidth: '34rem' }}>
+			<form onSubmit={handleSubmit} className="surface stack section-narrow">
 				<SelectField
 					label="Show"
 					placeholder="Select a show"
@@ -100,8 +100,7 @@ export function ManualEntryPage() {
 						{actors.map((actor) => (
 							<Checkbox
 								key={actor.id}
-								className="checkbox-row"
-								style={{ padding: '0.25rem 0' }}
+								className="checkbox-row checkbox-row--dense"
 								isSelected={selectedActors.has(actor.id)}
 								onChange={() => {
 									toggleActor(actor.id);

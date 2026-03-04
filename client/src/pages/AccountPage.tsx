@@ -1,20 +1,81 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
+import { useAuth, type Membership } from '../lib/auth';
 import { api } from '../lib/api';
-import { Button } from '../components/ui';
+import { Button, TextFieldInput } from '../components/ui';
+
+function OrganizationSettings({ membership, onDone }: { membership: Membership; onDone: () => void }) {
+	const { refresh } = useAuth();
+	const navigate = useNavigate();
+	const [organizationName, setOrganizationName] = useState(membership.organization.name);
+	const [saving, setSaving] = useState(false);
+	const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+	async function handleRename(e: React.FormEvent) {
+		e.preventDefault();
+		if (!organizationName.trim()) return;
+		setSaving(true);
+		setMessage(null);
+		try {
+			await api.patch(`/organizations/${membership.organization.slug}`, { name: organizationName.trim() });
+			await refresh();
+			setMessage({ type: 'success', text: 'Organization renamed.' });
+		} catch (err) {
+			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to rename' });
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	async function handleDelete() {
+		if (!confirm(`Delete "${membership.organization.name}"? This cannot be undone.`)) return;
+		try {
+			await api.delete(`/organizations/${membership.organization.slug}`);
+			await refresh();
+			navigate('/account');
+			onDone();
+		} catch (err) {
+			setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete' });
+		}
+	}
+
+	return (
+		<div className="stack">
+			<form onSubmit={handleRename} className="stack">
+				<TextFieldInput
+					label="Organization name"
+					value={organizationName}
+					onChange={setOrganizationName}
+					inputProps={{ placeholder: 'Organization name' }}
+				/>
+				{message && (
+					<div className={`alert ${message.type === 'error' ? 'alert--error' : 'alert--success'}`}>
+						{message.text}
+					</div>
+				)}
+				<Button type="submit" variant="primary" isDisabled={saving || !organizationName.trim()}>
+					{saving ? 'Saving...' : 'Rename organization'}
+				</Button>
+			</form>
+			<Button variant="danger" onPress={() => void handleDelete()}>
+				Delete organization
+			</Button>
+		</div>
+	);
+}
 
 export function AccountPage() {
 	const { user, logout, refresh } = useAuth();
 	const navigate = useNavigate();
 	const [creating, setCreating] = useState(false);
 	const [error, setError] = useState('');
+	const [expandedOrgSlug, setExpandedOrgSlug] = useState<string | null>(null);
 
-	async function handleCreateCompany() {
+	async function handleCreateOrganization() {
 		setError('');
 		setCreating(true);
 		try {
-			const name = prompt('Company name:');
+			const name = prompt('Organization name:');
 			if (!name?.trim()) return;
 			const slug = name
 				.trim()
@@ -22,17 +83,17 @@ export function AccountPage() {
 				.replace(/\s+/g, '-')
 				.replace(/[^a-z0-9-]/g, '');
 			if (!slug) {
-				setError('Invalid company name');
+				setError('Invalid organization name');
 				return;
 			}
 			const org = await api.post<{ id: string; slug: string }>('/organizations', {
 				name: name.trim(),
-				slug: slug || `company-${Date.now()}`,
+				slug: slug || `org-${Date.now()}`,
 			});
 			await refresh();
 			navigate(`/admin/${org.slug}`);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to create company');
+			setError(err instanceof Error ? err.message : 'Failed to create organization');
 		} finally {
 			setCreating(false);
 		}
@@ -45,16 +106,16 @@ export function AccountPage() {
 
 	if (!user) return null;
 
-	const memberships = user.memberships ?? [];
+	const memberships = user.memberships;
 
 	return (
-		<div className="auth-shell" style={{ maxWidth: '36rem', margin: '0 auto' }}>
-			<div className="card auth-card stack">
+		<div className="auth-shell auth-shell--account">
+			<div className="surface auth-panel auth-panel--account stack">
 				<div>
 					<h1 className="auth-title">Callboard</h1>
 					<p className="auth-subtitle">Your account</p>
 				</div>
-				<p style={{ margin: 0 }}>
+				<p className="u-m0">
 					{user.firstName} {user.lastName} ({user.email})
 				</p>
 
@@ -62,46 +123,28 @@ export function AccountPage() {
 
 				{memberships.length === 0 ? (
 					<div>
-						<p>You have no companies. Create one to get started.</p>
+						<p>You have no organizations. Create one to get started.</p>
 						<Button
 							variant="primary"
-							onPress={() => void handleCreateCompany()}
+							onPress={() => void handleCreateOrganization()}
 							isDisabled={creating}
 						>
-							{creating ? 'Creating...' : 'Add Company'}
+							{creating ? 'Creating...' : 'Add Organization'}
 						</Button>
 					</div>
 				) : (
-					<div className="stack" style={{ gap: '0.75rem' }}>
-						<h2 style={{ margin: 0, fontSize: '1rem' }}>Your companies</h2>
-						<ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+					<div className="stack stack--md">
+						<h2 className="account-section-title">Your organizations</h2>
+						<ul className="account-list">
 							{memberships.map((m) => (
-								<li
-									key={m.organizationId}
-									style={{
-										display: 'flex',
-										flexDirection: 'column',
-										alignItems: 'center',
-										justifyContent: 'flex-start',
-										gap: '0.75rem',
-										padding: '0.5rem 0',
-										borderBottom: '1px solid var(--color-border)',
-									}}
-								>
-									<div style={{ flex: 1 }}>
+								<li key={m.organizationId} className="account-item">
+									<div className="account-item__identity">
 										<strong>{m.organization.showTitle ?? m.organization.name}</strong>
-										<span
-											className="badge"
-											style={{
-												marginLeft: '0.5rem',
-												fontSize: '0.75rem',
-												textTransform: 'capitalize',
-											}}
-										>
+										<span className="badge badge--role">
 											{m.role}
 										</span>
 									</div>
-									<div style={{ display: 'flex', gap: '0.5rem' }}>
+									<div className="account-item__actions">
 										{(m.role === 'owner' || m.role === 'admin') && (
 											<Button
 												size="sm"
@@ -139,17 +182,44 @@ export function AccountPage() {
 											</Button>
 										)}
 									</div>
+									{m.role === 'owner' && expandedOrgSlug === m.organization.slug && (
+										<div className="account-item__settings">
+											<OrganizationSettings
+												membership={m}
+												onDone={() => setExpandedOrgSlug(null)}
+											/>
+										</div>
+									)}
 								</li>
 							))}
 						</ul>
 						<Button
 							variant="primary"
-							onPress={() => void handleCreateCompany()}
+							onPress={() => void handleCreateOrganization()}
 							isDisabled={creating}
 						>
-							{creating ? 'Creating...' : 'Add Company'}
+							{creating ? 'Creating...' : 'Add Organization'}
 						</Button>
 					</div>
+				)}
+
+				{memberships.some((m) => m.role === 'owner') && (
+					<Button
+						size="sm"
+						variant="ghost"
+						onPress={() => {
+							const ownerMembership = memberships.find((m) => m.role === 'owner');
+							if (ownerMembership) {
+								setExpandedOrgSlug((prev) =>
+									prev === ownerMembership.organization.slug ? null : ownerMembership.organization.slug
+								);
+							}
+						}}
+					>
+						{memberships.some((m) => m.role === 'owner' && expandedOrgSlug === m.organization.slug)
+							? 'Cancel'
+							: 'Organization settings'}
+					</Button>
 				)}
 
 				<Button variant="ghost" onPress={() => void handleLogout()}>
