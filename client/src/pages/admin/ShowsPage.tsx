@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { formatShowTime, toLocalDateStr } from '../../lib/dateUtils';
+import { formatDateOnly, formatShowTime, toDateOnlyStr, toLocalDateStr } from '../../lib/dateUtils';
 import { Button, TextFieldInput } from '../../components/ui';
 import { BulkShowCreator } from '../../components/BulkShowCreator';
 
@@ -118,7 +118,7 @@ export function ShowsPage() {
 	function startEdit(show: Show) {
 		setEditingShowId(show.id);
 		setEditForm({
-			date: toLocalDateStr(new Date(show.date)),
+			date: toDateOnlyStr(show.date),
 			showTime: show.showTime.slice(0, 5),
 		});
 	}
@@ -304,12 +304,7 @@ export function ShowsPage() {
 									) : (
 										<>
 											<td>
-												{new Date(show.date).toLocaleDateString(undefined, {
-													weekday: 'short',
-													year: 'numeric',
-													month: 'numeric',
-													day: 'numeric',
-												})}
+												{formatDateOnly(show.date)}
 											</td>
 											<td>{formatShowTime(show.showTime)}</td>
 											<td

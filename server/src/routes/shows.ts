@@ -87,6 +87,12 @@ function parseDateOnly(dateStr: string): Date {
 	return new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
+/** Parse YYYY-MM-DD as UTC midnight. Avoids timezone shift from new Date(str) + setHours. */
+function parseDateOnlyUTC(dateStr: string): Date {
+	const [y, m, d] = dateStr.split("-").map((part) => parseInt(part, 10));
+	return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+}
+
 function dayDiffInclusive(start: Date, end: Date): number {
 	const MS_PER_DAY = 24 * 60 * 60 * 1000;
 	return Math.floor((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
@@ -125,8 +131,8 @@ router.get("/", async (req, res) => {
   };
   if (start || end) {
     where.date = {};
-    if (start) where.date.gte = new Date(start);
-    if (end) where.date.lte = new Date(end);
+    if (start) where.date.gte = parseDateOnlyUTC(start);
+    if (end) where.date.lte = parseDateOnlyUTC(end);
   }
 
   const shows = await prisma.show.findMany({
@@ -141,8 +147,7 @@ router.post("/", async (req, res) => {
     const data = createShowSchema.parse(req.body);
     const orgId = req.organizationId!;
 
-    const date = new Date(data.date);
-    date.setHours(0, 0, 0, 0);
+    const date = parseDateOnlyUTC(data.date);
 
     const show = await prisma.show.create({
       data: {
@@ -203,8 +208,7 @@ router.post("/import", upload.single("file") as unknown as express.RequestHandle
       const match = row.date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (!match) continue;
 
-      const date = new Date(row.date);
-      date.setHours(0, 0, 0, 0);
+      const date = parseDateOnlyUTC(row.date);
 
       const existing = await prisma.show.findUnique({
         where: {
@@ -250,8 +254,8 @@ router.post("/bulk-generate", async (req, res) => {
 		const data = bulkGenerateShowSchema.parse(req.body);
 		const orgId = req.organizationId!;
 
-		const start = parseDateOnly(data.startDate);
-		const end = parseDateOnly(data.endDate);
+		const start = parseDateOnlyUTC(data.startDate);
+		const end = parseDateOnlyUTC(data.endDate);
 		if (start.getTime() > end.getTime()) {
 			res.status(400).json({ error: "Start date must be on or before end date" });
 			return;
@@ -280,14 +284,14 @@ router.post("/bulk-generate", async (req, res) => {
 		const created: { date: string; showTime: string }[] = [];
 		const skipped: { date: string; showTime: string }[] = [];
 
-		for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
-			const weekday = d.getDay();
+		for (let d = new Date(start); d.getTime() <= end.getTime(); d.setUTCDate(d.getUTCDate() + 1)) {
+			const weekday = d.getUTCDay();
 			const times = weekdayTimes[weekday] ?? [];
 			if (times.length === 0) continue;
 
-			const date = new Date(d);
-			date.setHours(0, 0, 0, 0);
-			const dateLabel = formatDateOnly(date);
+			const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+			const date = parseDateOnlyUTC(dateStr);
+			const dateLabel = dateStr;
 
 			for (const showTime of times) {
 				const existing = await prisma.show.findUnique({
@@ -378,9 +382,7 @@ router.patch("/:id", async (req, res) => {
 
     const updateData: Record<string, unknown> = { ...data };
     if (data.date) {
-      const d = new Date(data.date);
-      d.setHours(0, 0, 0, 0);
-      updateData.date = d;
+      updateData.date = parseDateOnlyUTC(data.date);
     }
     if (data.showTime) {
       updateData.showTime = toHHmm(data.showTime);

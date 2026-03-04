@@ -24,6 +24,23 @@ export function toLocalDateStr(d: Date): string {
 	return `${y}-${m}-${day}`;
 }
 
+/** Extract YYYY-MM-DD from a date string (e.g. from API) without timezone conversion. */
+export function toDateOnlyStr(dateStr: string): string {
+	const match = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+	return match ? match[1] : toLocalDateStr(new Date(dateStr));
+}
+
+/** Format a date-only string for display (avoids timezone shift from UTC midnight). */
+export function formatDateOnly(dateStr: string): string {
+	const d = new Date(toDateOnlyStr(dateStr) + 'T12:00:00.000Z');
+	return d.toLocaleDateString(undefined, {
+		weekday: 'short',
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric',
+	});
+}
+
 /** Start of today at midnight (local time). */
 export function getTodayStart(): Date {
 	const d = new Date();
